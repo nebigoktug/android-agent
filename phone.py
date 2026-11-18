@@ -11,7 +11,7 @@ Commands:
   type "text"              type into the focused field
   swipe up|down|left|right [N]   swipe the screen (or scrollable element N)
   key back|home|enter|recents|del|tab   send a key
-  open PACKAGE|name        open an app (package name or part of its label/package)
+  open PACKAGE|name [--fresh]  open an app (--fresh: restart it from its home screen)
   apps [filter]            list launchable apps
   shot                     save a small grayscale screenshot (when text is not enough)
   wait [sec]               wait until the screen settles
@@ -30,6 +30,7 @@ import sys
 import time
 import xml.etree.ElementTree as ET
 
+ORIENTATION = "portrait"
 STATE = os.path.expanduser("~/.cache/phone-agent/last.json")
 REMOTE_XML = "/data/local/tmp/pa_ui.xml"
 KEYS = {"back": 4, "home": 3, "enter": 66, "recents": 187, "del": 67, "tab": 61}
@@ -75,6 +76,8 @@ def elements(xml):
         root = ET.fromstring(xml)
     except ET.ParseError:
         return [], ""
+    global ORIENTATION
+    ORIENTATION = "landscape" if root.attrib.get("rotation") in ("1", "3") else "portrait"
     package, raw = "", []
     for n in root.iter("node"):
         a = n.attrib
@@ -165,11 +168,11 @@ def screen(full=False):
         seen = {line(i, el) for i, el in enumerate(prev["items"])}
         changed = [l for l in lines if l not in seen]
         if len(changed) < len(lines) * 0.6:
-            print(f"{package} | {len(items)} items | {len(changed)} changed:" if changed
-                  else f"{package} | no change")
+            print(f"{package} | {ORIENTATION} | {len(items)} items | {len(changed)} changed:" if changed
+                  else f"{package} | {ORIENTATION} | no change")
             print("\n".join(changed))
             return
-    print(f"{package} | {len(items)} items")
+    print(f"{package} | {ORIENTATION} | {len(items)} items")
     print("\n".join(lines))
     if len(items) <= 2 and os.environ.get("PA_AUTOSHOT", "1") == "1":
         # Text tree is (nearly) empty: Flutter, games, some WebViews. Fall back to a small image.
@@ -178,9 +181,23 @@ def screen(full=False):
 
 
 def target(arg):
+    """Resolve a tap target. For element numbers, re-read the screen and make sure the same
+    element (kind + label) is still there; use its current position, or stop."""
     if re.fullmatch(r"\d+,\d+", arg):
         return tuple(map(int, arg.split(",")))
-    el = load_state()["items"][int(arg)]
+    state = load_state()
+    el = state["items"][int(arg)]
+    if os.environ.get("PA_VERIFY", "1") != "1":
+        return el["x"], el["y"]
+    items, package = elements(dump_xml())
+    same = [e for e in items if e["t"] == el["t"] and e["e"] == el["e"]]
+    if not same:
+        print(f"STOPPED: element [{arg}] {el['t']} \"{el['e']}\" is no longer on screen. Run `screen` again.")
+        sys.exit(4)
+    best = min(same, key=lambda e: abs(e["x"] - el["x"]) + abs(e["y"] - el["y"]))
+    # keep numbering stable for chained commands: only positions are refreshed
+    el["x"], el["y"], el["b"] = best["x"], best["y"], best["b"]
+    json.dump(state, open(STATE, "w"), ensure_ascii=False)
     return el["x"], el["y"]
 
 
@@ -246,11 +263,18 @@ def apps(filt=""):
     return [p for p in pkgs if filt.lower() in p.lower()]
 
 
-def open_app(name):
-    pkg = name if "." in name else (apps(name) or [None])[0]
+def open_app(name, fresh=False):
+    if "." in name:
+        pkg = name
+    else:  # best match: package ending in ".name", else the shortest package containing it
+        found = apps(name)
+        exact = [p for p in found if p.lower().endswith("." + name.lower())]
+        pkg = (exact or sorted(found, key=len) or [None])[0]
     if not pkg:
         print("app not found")
         return
+    if fresh:  # start from the app's home screen instead of where it was left
+        sh(f"am force-stop {pkg}")
     sh(f"monkey -p {pkg} -c android.intent.category.LAUNCHER 1 >/dev/null 2>&1")
     print("opened:", pkg)
 
@@ -289,7 +313,7 @@ def run(args):
     elif cmd == "type": type_text(" ".join(a))
     elif cmd == "swipe": swipe(a[0], a[1] if len(a) > 1 else None)
     elif cmd == "key": sh(f"input keyevent {KEYS.get(a[0], a[0])}")
-    elif cmd == "open": open_app(" ".join(a))
+    elif cmd == "open": open_app(" ".join(x for x in a if x != "--fresh"), fresh="--fresh" in a)
     elif cmd == "apps": print("\n".join(apps(a[0] if a else "")))
     elif cmd == "shot": shot()
     elif cmd == "wait": wait(float(a[0]) if a else 1.0)

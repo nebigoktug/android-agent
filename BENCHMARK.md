@@ -21,3 +21,13 @@ The same 19 looks as screenshots ≈ **~28,500 tokens** (~10× more).
 - `open` resumes the app where it was left (e.g. inside Shorts); a `--fresh` start is needed for repeatable tasks.
 - Auto-rotate: one app opened in landscape. Report orientation in the screen header.
 - Unlabeled controls (`? icon ...`) are common in Play Store and Maps.
+
+## Re-run after fixes (v0.1.1)
+
+Fixes: verify the target right before each tap, `open --fresh`, orientation in the header,
+better app-name matching (`open youtube` had picked YouTube Studio).
+
+| Task | Result |
+|---|---|
+| YouTube (fresh start) → search "lofi" | ok, no mis-tap |
+| Maps (fresh start, portrait) → search a place | **ok** (the earlier failure was landscape layout) |

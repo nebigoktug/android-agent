@@ -35,8 +35,10 @@ TOOLS = [
          "element": {"type": "integer"}}, "required": ["direction"]}},
     {"name": "key", "description": "Press a key: back, home, enter, recents, del, tab (or an Android keycode).",
      "inputSchema": {"type": "object", "properties": {"key": {"type": "string"}}, "required": ["key"]}},
-    {"name": "open_app", "description": "Open an app by package name or part of it (e.g. 'youtube').",
-     "inputSchema": {"type": "object", "properties": {"name": {"type": "string"}}, "required": ["name"]}},
+    {"name": "open_app", "description": "Open an app by package name or part of it (e.g. 'youtube'). "
+     "fresh=true restarts it from its home screen (loses its current state).",
+     "inputSchema": {"type": "object", "properties": {"name": {"type": "string"}, "fresh": {"type": "boolean"}},
+                     "required": ["name"]}},
     {"name": "list_apps", "description": "List launchable app packages, optionally filtered.",
      "inputSchema": {"type": "object", "properties": {"filter": {"type": "string"}}}},
     {"name": "wait", "description": "Wait until the screen settles (seconds, default 1).",
@@ -68,7 +70,7 @@ def call(name, a):
                 phone.sh(f"input keyevent {phone.KEYS.get(a['key'], a['key'])}")
                 print("ok")
             elif name == "open_app":
-                phone.open_app(a["name"])
+                phone.open_app(a["name"], fresh=bool(a.get("fresh")))
             elif name == "list_apps":
                 print("\n".join(phone.apps(a.get("filter", ""))))
             elif name == "wait":
