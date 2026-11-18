@@ -82,8 +82,8 @@ def elements(xml):
         b = parse_bounds(a.get("bounds"))
         if not b or b[2] - b[0] < 4 or b[3] - b[1] < 4:
             continue
-        text = (a.get("text") or "").strip()
-        desc = (a.get("content-desc") or "").strip()
+        text = " ".join((a.get("text") or "").split())
+        desc = " ".join((a.get("content-desc") or "").split())
         clickable = a.get("clickable") == "true" or a.get("long-clickable") == "true"
         scrollable = a.get("scrollable") == "true"
         editable = a.get("class", "").endswith(("EditText", "AutoCompleteTextView"))
