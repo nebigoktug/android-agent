@@ -28,7 +28,7 @@ In a first test (6 everyday tasks: Settings, YouTube search, Calculator, Clock, 
 ## Requirements
 
 - An Android phone with Developer options (Android 11+ for wireless; any version with a USB cable)
-- Python 3.9+ and `adb` (Android platform-tools) on the computer — or Termux on the phone
+- Python 3.10+ and `adb` (Android platform-tools) on the computer — or Termux on the phone
 - No other dependencies. Optional: Pillow (smaller fallback screenshots)
 
 ## Quick start — from a computer (easiest)
