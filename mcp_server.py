@@ -16,6 +16,11 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import phone  # noqa: E402
 
 PROTOCOL = "2025-06-18"
+try:
+    sys.stdin.reconfigure(encoding="utf-8")
+    sys.stdout.reconfigure(encoding="utf-8")
+except Exception:
+    pass
 
 TOOLS = [
     {"name": "screen", "description": "Read the current screen as a short numbered text list "
@@ -124,7 +129,7 @@ def main():
         if method == "initialize":
             reply(id_, {"protocolVersion": req.get("params", {}).get("protocolVersion", PROTOCOL),
                         "capabilities": {"tools": {}},
-                        "serverInfo": {"name": "phone-agent", "version": "0.1.0"}})
+                        "serverInfo": {"name": "phone-agent", "version": "0.2.0"}})
         elif method == "tools/list":
             reply(id_, {"tools": TOOLS})
         elif method == "tools/call":

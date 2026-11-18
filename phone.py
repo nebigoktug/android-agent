@@ -34,6 +34,12 @@ import time
 import xml.etree.ElementTree as ET
 
 ORIENTATION = "portrait"
+for _stream in (sys.stdout, sys.stderr):
+    try:
+        _stream.reconfigure(encoding="utf-8", errors="replace")
+    except Exception:
+        pass
+
 STATE = os.path.expanduser("~/.cache/phone-agent/last.json")
 REMOTE_XML = "/data/local/tmp/pa_ui.xml"
 KEYS = {"back": 4, "home": 3, "enter": 66, "recents": 187, "del": 67, "tab": 61}
@@ -56,6 +62,32 @@ def ensure_device():
         st = subprocess.run(["adb", "-s", serial, "get-state"], capture_output=True, timeout=10)
         if st.returncode != 0:
             subprocess.run(["adb", "connect", serial], capture_output=True, timeout=15)
+            st = subprocess.run(["adb", "-s", serial, "get-state"], capture_output=True, timeout=10)
+        if st.returncode != 0:
+            # Wireless debugging picks a new port after a reboot or toggle: look it up via mDNS.
+            found = discover_wireless()
+            if found:
+                subprocess.run(["adb", "connect", found], capture_output=True, timeout=15)
+                os.environ["ANDROID_SERIAL"] = found
+                try:
+                    os.makedirs(os.path.dirname(SERIAL_FILE), exist_ok=True)
+                    open(SERIAL_FILE, "w").write(found)
+                except OSError:
+                    pass
+
+
+def discover_wireless():
+    """Return HOST:PORT of a phone advertising wireless debugging (adb mDNS), or None."""
+    try:
+        out = subprocess.run(["adb", "mdns", "services"], capture_output=True, timeout=10).stdout.decode()
+    except Exception:
+        return None
+    for l in out.splitlines():
+        if "_adb-tls-connect" in l:
+            m = re.search(r"(\d+\.\d+\.\d+\.\d+:\d+)", l)
+            if m:
+                return m.group(1)
+    return None
 
 
 def adb(*args, timeout=30):

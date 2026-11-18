@@ -5,7 +5,7 @@ description: Use an Android phone and its apps through phone-agent (text-first s
 
 # Using the phone
 
-Tools come from the `phone` MCP server (or `python3 phone.py <command>` in a shell).
+Tools come from the `phone` MCP server (or `python phone.py <command>` in a shell).
 
 ## Loop
 
