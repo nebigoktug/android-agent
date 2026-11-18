@@ -22,6 +22,7 @@ Device: ANDROID_SERIAL, or the device saved by setup.sh (~/.config/phone-agent/s
 Safety: tap/type refuse to act if another app came to the front since the last
 `screen` (exit code 3). Set PA_FORCE=1 to override.
 """
+import base64
 import hashlib
 import io
 import json
@@ -258,14 +259,25 @@ def type_text(text, guarded=False):
         safe = text.replace("\\", "\\\\").replace("'", "'\\''").replace(" ", "%s")
         sh(f"input text '{safe}'")
         return
-    # Non-ASCII: `input text` cannot type it. Use ADB Keyboard if it is the active IME.
-    if "com.android.adbkeyboard" in sh("settings get secure default_input_method"):
-        q = text.replace("'", "'\\''")
-        sh(f"am broadcast -a ADB_INPUT_TEXT --es msg '{q}' >/dev/null")
+    # Non-ASCII: `input text` cannot type it. Switch to ADB Keyboard only for this text,
+    # then give the user's own keyboard back.
+    if "com.android.adbkeyboard" not in sh("pm list packages com.android.adbkeyboard"):
+        print("warning: ADB Keyboard not installed; typing an ASCII approximation")
+        table = str.maketrans("çğıöşüÇĞİÖŞÜâîûÂÎÛ", "cgiosuCGIOSUaiuAIU")
+        type_text(text.translate(table), guarded=True)
         return
-    print("warning: no ADB Keyboard for non-ASCII text; typing an ASCII approximation")
-    table = str.maketrans("çğıöşüÇĞİÖŞÜâîûÂÎÛ", "cgiosuCGIOSUaiuAIU")
-    type_text(text.translate(table), guarded=True)
+    ime = "com.android.adbkeyboard/.AdbIME"
+    previous = sh("settings get secure default_input_method").strip()
+    b64 = base64.b64encode(text.encode("utf-8")).decode()
+    try:
+        sh(f"ime enable {ime} >/dev/null; ime set {ime} >/dev/null")
+        time.sleep(0.4)
+        sh(f"am broadcast -a ADB_INPUT_B64 --es msg {b64} >/dev/null")
+        time.sleep(0.3)
+    finally:
+        if previous and previous != ime and "/" in previous:
+            sh(f"ime set {previous} >/dev/null")
+        sh(f"ime disable {ime} >/dev/null")
 
 
 def swipe(direction, n=None):

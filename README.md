@@ -80,8 +80,10 @@ Tools: `screen`, `tap`, `type`, `swipe`, `key`, `open_app`, `open_link`, `list_a
 
 ## Known limits
 
-- Non-ASCII text needs [ADB Keyboard](https://github.com/senzhk/ADBKeyBoard) as the active keyboard;
-  otherwise it is typed as an ASCII approximation.
+- Non-ASCII text (ç, ğ, é, 中文, emoji) needs [ADB Keyboard](https://github.com/senzhk/ADBKeyBoard) installed.
+  phone-agent switches to it only while typing such text and then restores your own keyboard
+  (and disables ADB Keyboard again). Without it, text is typed as an ASCII approximation.
+  Xiaomi: enable "Install via USB" to install it with `adb install`.
 - `uiautomator dump` takes ~1–3 s and can fail while the screen animates (retried automatically).
 - Some apps expose unlabeled buttons; they show as `? icon bottom-left` etc.
 
