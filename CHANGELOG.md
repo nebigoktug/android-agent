@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.4.0 (unreleased)
+- `ocr`: read text from apps that expose none (games, Flutter) with Tesseract; tappable by number
+- `agent.py` (experimental): run a whole task from plain language with Claude or any
+  OpenAI-compatible endpoint; asks before irreversible steps
+- SKILL: close unexpected pop-ups, never confirm casts/purchases/permissions not asked for
+
 ## 0.3.0
 - Act without agent turns: `tap "label"`, `find` (scrolls to it), `wait-for`
 - Unlabeled switches take the name of their row; duplicate row/checkbox switches merged

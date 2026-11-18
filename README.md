@@ -82,6 +82,22 @@ use the tools and when it must ask you first.
 Tools: `screen`, `tap`, `type`, `swipe`, `key`, `open_app`, `open_link`, `list_apps`, `wait`,
 `screenshot`, `rotation_lock`.
 
+## Let a model do the whole task (experimental)
+
+`agent.py` runs the loop itself: give it a task in plain language.
+
+```sh
+pip install anthropic && export ANTHROPIC_API_KEY=...
+python agent.py "turn on Bluetooth and tell me which devices are paired"
+
+# or any OpenAI-compatible endpoint (Gemini, Groq, OpenRouter, a local Ollama, ...)
+export OPENAI_API_KEY=...
+python agent.py --provider openai --base-url https://generativelanguage.googleapis.com/v1beta/openai/ \
+                --model gemini-2.5-flash "what are my last 5 notifications about?"
+```
+
+It asks you in the terminal before anything irreversible, prints each step, and reports tokens used.
+
 ## Using it by hand
 
 ```sh
