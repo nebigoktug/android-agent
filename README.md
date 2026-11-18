@@ -32,7 +32,11 @@ A small grayscale screenshot is used only when the text is not enough (games, Fl
 
 ## Setup
 
-**On the phone itself (Termux):**
+Quick way: `sh setup.sh` (installs adb in Termux if needed, pairs, connects, remembers the device
+in `~/.config/phone-agent/serial`, and can register the MCP server with Claude Code).
+After that, `phone.py` reconnects by itself when the wireless connection drops.
+
+**Manual, on the phone itself (Termux):**
 
 1. Developer options → turn on *USB debugging* and *Wireless debugging*
    (Xiaomi: also *USB debugging (Security settings)*, needed for taps).
@@ -59,7 +63,7 @@ python3 phone.py shot              # small screenshot, only when needed
 ### As an MCP server (Claude Code, Cursor, ...)
 
 ```sh
-claude mcp add phone -e ANDROID_SERIAL=127.0.0.1:PORT -- python3 /path/to/mcp_server.py
+claude mcp add phone -- python3 /path/to/mcp_server.py   # uses the device saved by setup.sh
 ```
 
 Tools: `screen`, `tap`, `type`, `swipe`, `key`, `open_app`, `list_apps`, `wait`, `screenshot`.

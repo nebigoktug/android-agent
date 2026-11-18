@@ -16,7 +16,7 @@ Commands:
   shot                     save a small grayscale screenshot (when text is not enough)
   wait [sec]               wait until the screen settles
 Chain commands with a lone comma:  phone.py tap 5 , wait , type hello , key enter
-Device: set ANDROID_SERIAL (adb serial), e.g. 127.0.0.1:42861
+Device: ANDROID_SERIAL, or the device saved by setup.sh (~/.config/phone-agent/serial).
 Safety: tap/type refuse to act if another app came to the front since the last
 `screen` (exit code 3). Set PA_FORCE=1 to override.
 """
@@ -36,7 +36,27 @@ REMOTE_XML = "/data/local/tmp/pa_ui.xml"
 KEYS = {"back": 4, "home": 3, "enter": 66, "recents": 187, "del": 67, "tab": 61}
 
 
+SERIAL_FILE = os.path.expanduser("~/.config/phone-agent/serial")
+_checked = False
+
+
+def ensure_device():
+    """Use ANDROID_SERIAL, else the device saved by setup.sh; reconnect once if it dropped."""
+    global _checked
+    if _checked:
+        return
+    _checked = True
+    if not os.environ.get("ANDROID_SERIAL") and os.path.exists(SERIAL_FILE):
+        os.environ["ANDROID_SERIAL"] = open(SERIAL_FILE).read().strip()
+    serial = os.environ.get("ANDROID_SERIAL", "")
+    if ":" in serial:
+        st = subprocess.run(["adb", "-s", serial, "get-state"], capture_output=True, timeout=10)
+        if st.returncode != 0:
+            subprocess.run(["adb", "connect", serial], capture_output=True, timeout=15)
+
+
 def adb(*args, timeout=30):
+    ensure_device()
     r = subprocess.run(["adb", *args], capture_output=True, timeout=timeout)
     return r.stdout.decode("utf-8", "replace"), r.stderr.decode("utf-8", "replace")
 
@@ -280,7 +300,8 @@ def open_app(name, fresh=False):
 
 
 def shot():
-    png = subprocess.run(["adb", "exec-out", "screencap", "-p"], capture_output=True).stdout
+    ensure_device()  # binary output: call adb directly, not through the text helper
+    png = subprocess.run(["adb", "exec-out", "screencap", "-p"], capture_output=True, timeout=30).stdout
     path = os.path.expanduser("~/.cache/phone-agent/screen.png")
     os.makedirs(os.path.dirname(path), exist_ok=True)
     try:
