@@ -19,7 +19,10 @@ Tools come from the `phone` MCP server (or `python3 phone.py <command>` in a she
 - Prefer `screen` over `screenshot`. Use `screenshot` only when the list is nearly empty
   (games, Flutter apps, maps, images) or labels are clearly missing (`? icon ...`).
 - Chain obvious steps without reading in between when you are sure (CLI: `tap 3 , wait , type hi`).
-- Use `open_app` instead of navigating the launcher.
+- Use `open_app` instead of navigating the launcher; `fresh=true` when you need the app's home screen.
+- Prefer a deep link when one exists (`open_link`): maps search (`geo:0,0?q=...`), web/YouTube search URLs.
+  One call instead of tap → type → enter.
+- If the screen header says `landscape` and the layout looks wrong, use `rotation_lock` (and restore it at the end).
 - `swipe up` reveals content further down; then `screen` for the new items.
 
 ## Safety rules

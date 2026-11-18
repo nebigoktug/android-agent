@@ -58,6 +58,8 @@ python3 phone.py type hello , key enter      # chain with a lone comma
 python3 phone.py swipe up
 python3 phone.py open youtube
 python3 phone.py shot              # small screenshot, only when needed
+python3 phone.py link "geo:0,0?q=Eiffel+Tower"   # deep links skip many taps
+python3 phone.py lock , unlock     # pin portrait for a session, then restore the user's setting
 ```
 
 ### As an MCP server (Claude Code, Cursor, ...)
@@ -66,7 +68,7 @@ python3 phone.py shot              # small screenshot, only when needed
 claude mcp add phone -- python3 /path/to/mcp_server.py   # uses the device saved by setup.sh
 ```
 
-Tools: `screen`, `tap`, `type`, `swipe`, `key`, `open_app`, `list_apps`, `wait`, `screenshot`.
+Tools: `screen`, `tap`, `type`, `swipe`, `key`, `open_app`, `open_link`, `list_apps`, `wait`, `screenshot`, `rotation_lock`.
 
 ## Safety
 

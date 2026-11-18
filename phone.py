@@ -15,6 +15,8 @@ Commands:
   apps [filter]            list launchable apps
   shot                     save a small grayscale screenshot (when text is not enough)
   wait [sec]               wait until the screen settles
+  link URI                 open a deep link or URL (geo:, https://...) - often skips many taps
+  lock | unlock            pin to portrait for a session / restore the user's rotation setting
 Chain commands with a lone comma:  phone.py tap 5 , wait , type hello , key enter
 Device: ANDROID_SERIAL, or the device saved by setup.sh (~/.config/phone-agent/serial).
 Safety: tap/type refuse to act if another app came to the front since the last
@@ -280,6 +282,39 @@ def swipe(direction, n=None):
     sh("input swipe %d %d %d %d 300" % v)
 
 
+ROT_FILE = os.path.expanduser("~/.cache/phone-agent/rotation.json")
+
+
+def lock_portrait():
+    """Pin the screen to portrait for an agent session; remembers the user's setting."""
+    acc = sh("settings get system accelerometer_rotation").strip()
+    rot = sh("settings get system user_rotation").strip()
+    if not os.path.exists(ROT_FILE):
+        json.dump({"accelerometer_rotation": acc, "user_rotation": rot}, open(ROT_FILE, "w"))
+    sh("settings put system accelerometer_rotation 0; settings put system user_rotation 0")
+    print(f"portrait locked (saved: auto-rotate={acc}, rotation={rot}); run `unlock` to restore")
+
+
+def unlock_rotation():
+    if not os.path.exists(ROT_FILE):
+        print("nothing to restore")
+        return
+    old = json.load(open(ROT_FILE))
+    for k, v in old.items():
+        if re.fullmatch(r"\d+", v or ""):
+            sh(f"settings put system {k} {v}")
+    os.remove(ROT_FILE)
+    print(f"restored: {old}")
+
+
+def link(uri):
+    """Open a deep link / URL (often skips several taps), e.g.
+    geo:0,0?q=Clock+Tower+Izmir   https://www.youtube.com/results?search_query=lofi"""
+    q = uri.replace("'", "'\\''")
+    out = sh(f"am start -W -a android.intent.action.VIEW -d '{q}' 2>&1")
+    print("opened" if "Error" not in out else out.strip())
+
+
 def apps(filt=""):
     out = sh("cmd package query-activities --brief -a android.intent.action.MAIN "
              "-c android.intent.category.LAUNCHER")
@@ -341,6 +376,9 @@ def run(args):
     elif cmd == "open": open_app(" ".join(x for x in a if x != "--fresh"), fresh="--fresh" in a)
     elif cmd == "apps": print("\n".join(apps(a[0] if a else "")))
     elif cmd == "shot": shot()
+    elif cmd == "lock": lock_portrait()
+    elif cmd == "unlock": unlock_rotation()
+    elif cmd == "link": link(" ".join(a))
     elif cmd == "wait": wait(float(a[0]) if a else 1.0)
     else: print(__doc__)
 

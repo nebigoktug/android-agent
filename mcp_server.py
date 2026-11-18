@@ -39,6 +39,13 @@ TOOLS = [
      "fresh=true restarts it from its home screen (loses its current state).",
      "inputSchema": {"type": "object", "properties": {"name": {"type": "string"}, "fresh": {"type": "boolean"}},
                      "required": ["name"]}},
+    {"name": "open_link", "description": "Open a deep link or URL; often replaces many taps. Examples: "
+     "'geo:0,0?q=Eiffel+Tower' (maps search), 'https://www.youtube.com/results?search_query=lofi', "
+     "'tel:123' (dialer, does not call), 'mailto:a@b.c' (draft only).",
+     "inputSchema": {"type": "object", "properties": {"uri": {"type": "string"}}, "required": ["uri"]}},
+    {"name": "rotation_lock", "description": "lock=true pins the screen to portrait for the session and "
+     "remembers the user's setting; lock=false restores it. Restore before finishing.",
+     "inputSchema": {"type": "object", "properties": {"lock": {"type": "boolean"}}, "required": ["lock"]}},
     {"name": "list_apps", "description": "List launchable app packages, optionally filtered.",
      "inputSchema": {"type": "object", "properties": {"filter": {"type": "string"}}}},
     {"name": "wait", "description": "Wait until the screen settles (seconds, default 1).",
@@ -71,6 +78,10 @@ def call(name, a):
                 print("ok")
             elif name == "open_app":
                 phone.open_app(a["name"], fresh=bool(a.get("fresh")))
+            elif name == "open_link":
+                phone.link(a["uri"])
+            elif name == "rotation_lock":
+                phone.lock_portrait() if a.get("lock") else phone.unlock_rotation()
             elif name == "list_apps":
                 print("\n".join(phone.apps(a.get("filter", ""))))
             elif name == "wait":
