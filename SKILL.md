@@ -1,0 +1,33 @@
+---
+name: phone-agent
+description: Use an Android phone and its apps through phone-agent (text-first screen reading). Use when the user asks you to do something on their phone, open/operate an app, change a phone setting, or check something in an app.
+---
+
+# Using the phone
+
+Tools come from the `phone` MCP server (or `python3 phone.py <command>` in a shell).
+
+## Loop
+
+1. `screen` — read what is on screen. Each item is `[N] kind "label" (flags)`.
+   Kinds: button, toggle (on/off), input (focused), list (scrollable), text.
+2. Act on one element by its number: `tap N`, `type "..."`, `swipe up N`, `key back`.
+3. `screen` again — it returns only what changed. Repeat.
+
+## Keep it cheap
+
+- Prefer `screen` over `screenshot`. Use `screenshot` only when the list is nearly empty
+  (games, Flutter apps, maps, images) or labels are clearly missing (`? icon ...`).
+- Chain obvious steps without reading in between when you are sure (CLI: `tap 3 , wait , type hi`).
+- Use `open_app` instead of navigating the launcher.
+- `swipe up` reveals content further down; then `screen` for the new items.
+
+## Safety rules
+
+- If a tool says `STOPPED: ... is in front`, the user switched apps. Read the screen again
+  and make sure you should continue; do not force it.
+- Ask the user before anything irreversible or outward-facing: sending a message or email,
+  posting, buying or paying, deleting, uninstalling, changing account/security settings,
+  granting permissions.
+- Never type passwords or one-time codes unless the user gave them for that exact purpose.
+- If a screen is black or empty in a banking/secure app, stop and tell the user; do not work around it.
