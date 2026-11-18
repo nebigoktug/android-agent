@@ -95,6 +95,8 @@ python phone.py link "geo:0,0?q=Eiffel+Tower"     # deep links skip many taps
 python phone.py notifications         # what is new, without opening any app
 python phone.py status                # battery, screen, front app, keyboard, network
 python phone.py swipe up
+python phone.py record yt , open youtube --fresh , tap Search , type "{q}" , key enter , stop
+python phone.py play yt q=lofi          # replays without the model: zero tokens
 python phone.py shot                   # small screenshot, only when needed
 python phone.py help
 ```
@@ -125,7 +127,7 @@ python phone.py help
 
 ## Status
 
-Early (v0.2). Tested on a Xiaomi with Android 16 (Termux, wireless). Device-free tests run on
+Early (v0.3). Tested on a Xiaomi with Android 16 (Termux, wireless). Device-free tests run on
 Windows, macOS and Linux in CI. Reports from other phones are very welcome — please open an issue
 with your phone model and Android version.
 

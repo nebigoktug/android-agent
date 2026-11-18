@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.3.0
+- Act without agent turns: `tap "label"`, `find` (scrolls to it), `wait-for`
+- Unlabeled switches take the name of their row; duplicate row/checkbox switches merged
+- `notifications` and `status`: know what is new and the phone's state without opening apps
+- Recipes: `record` / `stop` / `play` (with {params}) — repeated tasks cost zero tokens
+- MCP: tap_label, find, wait_for, notifications, status, record/play recipes (20 tools)
+
 ## 0.2.0
 - Cross-platform `setup.py` (Windows, macOS, Linux, Termux; USB or wireless); replaces `setup.sh`
 - Reconnects by itself when the wireless port changes (mDNS lookup)

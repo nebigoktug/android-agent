@@ -12,6 +12,9 @@ Commands:
   wait-for "label" [sec]   wait until it appears (default 15 s)
   notifications [N] [--all]  current notifications, newest first, without opening apps
   status                   battery, screen on/off, front app, keyboard, auto-rotate, network
+  record NAME | stop       record the following steps as a recipe (taps saved by label)
+  play NAME [key=value]    replay a recipe without the model; {key} in typed text is replaced
+  recipes                  list saved recipes
   longpress N | X,Y        long press
   type "text"              type into the focused field
   swipe up|down|left|right [N]   swipe the screen (or scrollable element N)
@@ -592,12 +595,99 @@ def wait(sec=1.0):
         time.sleep(sec / 2)
 
 
+# ---------- recipes: record a task once, replay it without the model ----------
+RECIPES = os.path.expanduser("~/.config/android-agent/recipes")
+RECORDING = os.path.expanduser("~/.cache/android-agent/recording")
+RECORDABLE = {"tap", "longpress", "type", "swipe", "key", "open", "link", "find", "wait-for", "wait"}
+
+
+def recording():
+    try:
+        return open(RECORDING).read().strip()
+    except OSError:
+        return ""
+
+
+def record_prepare(args):
+    """Step to store for the recipe being recorded (or None). Numbered taps become labels."""
+    name = recording()
+    if not name or not args or args[0] not in RECORDABLE:
+        return None
+    step = list(args)
+    if step[0] in ("tap", "longpress") and len(step) > 1 and re.fullmatch(r"\d+", step[1]):
+        items = load_state().get("items", [])
+        i = int(step[1])
+        if i < len(items) and items[i]["e"] and not items[i]["e"].startswith(("?", "#")):
+            step[1] = items[i]["e"].split(" · ")[0]
+        elif i < len(items):
+            step[1] = f"{items[i]['x']},{items[i]['y']}"
+    return step
+
+
+def record_save(step):
+    """Called only after the step succeeded."""
+    name = recording()
+    if not step or not name:
+        return
+    path = os.path.join(RECIPES, name + ".json")
+    steps = json.load(open(path)) if os.path.exists(path) else []
+    steps.append(step)
+    json.dump(steps, open(path, "w"), ensure_ascii=False, indent=1)
+
+
+def record_start(name):
+    os.makedirs(RECIPES, exist_ok=True)
+    os.makedirs(os.path.dirname(RECORDING), exist_ok=True)
+    json.dump([], open(os.path.join(RECIPES, name + ".json"), "w"))
+    open(RECORDING, "w").write(name)
+    print(f"recording '{name}': run the steps, then `stop`. Use {{name}} in `type` for a parameter.")
+
+
+def record_stop():
+    name = recording()
+    if not name:
+        print("not recording")
+        return
+    os.remove(RECORDING)
+    steps = json.load(open(os.path.join(RECIPES, name + ".json")))
+    print(f"saved '{name}' ({len(steps)} steps):")
+    for st in steps:
+        print("  " + " ".join(st))
+
+
+def play(name, params):
+    path = os.path.join(RECIPES, name + ".json")
+    if not os.path.exists(path):
+        print(f"no recipe '{name}'. `recipes` lists them.")
+        sys.exit(2)
+    for st in json.load(open(path)):
+        st = [re.sub(r"\{(\w+)\}", lambda m: params.get(m.group(1), m.group(0)), x) for x in st]
+        print("> " + " ".join(st))
+        run(st)
+    print(f"done: {name}")
+
+
+def list_recipes():
+    names = sorted(f[:-5] for f in os.listdir(RECIPES) if f.endswith(".json")) if os.path.isdir(RECIPES) else []
+    for n in names:
+        steps = json.load(open(os.path.join(RECIPES, n + ".json")))
+        params = sorted(set(re.findall(r"\{(\w+)\}", json.dumps(steps))))
+        print(f"{n} ({len(steps)} steps)" + (f" params: {', '.join(params)}" if params else ""))
+    if not names:
+        print("no recipes yet: `record NAME` ... `stop`")
+
+
 def run(args):
     cmd, a = args[0], args[1:]
     if cmd == "screen": screen("--full" in a)
     elif cmd == "tap": tap(a[0])
     elif cmd == "longpress": tap(a[0], long=True)
-    elif cmd == "type": type_text(" ".join(a))
+    elif cmd == "type":
+        txt = " ".join(a)
+        if recording() and re.fullmatch(r"\{\w+\}", txt):
+            print(f"(recorded parameter {txt}; nothing typed now)")
+        else:
+            type_text(txt)
     elif cmd == "swipe": swipe(a[0], a[1] if len(a) > 1 else None)
     elif cmd == "key": sh(f"input keyevent {KEYS.get(a[0], a[0])}")
     elif cmd == "open": open_app(" ".join(x for x in a if x != "--fresh"), fresh="--fresh" in a)
@@ -610,6 +700,10 @@ def run(args):
     elif cmd == "notifications": notifications(int(a[0]) if a and a[0].isdigit() else 15,
                                                include_ongoing="--all" in a)
     elif cmd == "status": status()
+    elif cmd == "record": record_start(a[0])
+    elif cmd == "stop": record_stop()
+    elif cmd == "play": play(a[0], dict(x.split("=", 1) for x in a[1:] if "=" in x))
+    elif cmd == "recipes": list_recipes()
     elif cmd == "find": find(" ".join(x for x in a if x not in ("--down",)),
                              direction="down" if "--down" in a else "up")
     elif cmd == "wait-for": wait_for(a[0], float(a[1]) if len(a) > 1 else 15.0)
@@ -627,4 +721,6 @@ if __name__ == "__main__":
     groups.append(cur)
     for g in groups:
         if g:
+            step = record_prepare(g)
             run(g)
+            record_save(step)

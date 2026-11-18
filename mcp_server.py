@@ -68,6 +68,17 @@ TOOLS = [
                      "include_ongoing": {"type": "boolean"}}}},
     {"name": "status", "description": "One line: battery, screen on/off, front app, keyboard, auto-rotate, network.",
      "inputSchema": {"type": "object", "properties": {}}},
+    {"name": "record_start", "description": "Start recording the following actions as a named recipe "
+     "(taps are saved by label). Use type text '{name}' to make a parameter.",
+     "inputSchema": {"type": "object", "properties": {"name": {"type": "string"}}, "required": ["name"]}},
+    {"name": "record_stop", "description": "Stop recording and save the recipe.",
+     "inputSchema": {"type": "object", "properties": {}}},
+    {"name": "play_recipe", "description": "Replay a saved recipe without the model (zero tokens per step). "
+     "params fills {placeholders}, e.g. {\"q\": \"lofi\"}.",
+     "inputSchema": {"type": "object", "properties": {"name": {"type": "string"},
+                     "params": {"type": "object"}}, "required": ["name"]}},
+    {"name": "list_recipes", "description": "List saved recipes and their parameters.",
+     "inputSchema": {"type": "object", "properties": {}}},
     {"name": "list_apps", "description": "List launchable app packages, optionally filtered.",
      "inputSchema": {"type": "object", "properties": {"filter": {"type": "string"}}}},
     {"name": "wait", "description": "Wait until the screen settles (seconds, default 1).",
@@ -78,8 +89,21 @@ TOOLS = [
 ]
 
 
+def as_cli(name, a):
+    """The CLI form of an action, so recipes recorded over MCP replay from the CLI too."""
+    m = {"tap": lambda: ["longpress" if a.get("long") else "tap", str(a["target"])],
+         "tap_label": lambda: ["longpress" if a.get("long") else "tap", str(a["label"])],
+         "type": lambda: ["type", a["text"]], "key": lambda: ["key", a["key"]],
+         "swipe": lambda: ["swipe", a["direction"]] + ([str(a["element"])] if a.get("element") is not None else []),
+         "open_app": lambda: ["open", a["name"]] + (["--fresh"] if a.get("fresh") else []),
+         "open_link": lambda: ["link", a["uri"]], "find": lambda: ["find", a["label"]],
+         "wait_for": lambda: ["wait-for", a["label"]], "wait": lambda: ["wait", str(a.get("seconds", 1))]}
+    return m[name]() if name in m else None
+
+
 def call(name, a):
     buf = io.StringIO()
+    step = phone.record_prepare(as_cli(name, a) or [])
     image = None
     try:
         with contextlib.redirect_stdout(buf):
@@ -90,8 +114,11 @@ def call(name, a):
                 phone.tap(str(a["target"]), long=bool(a.get("long")))
                 print("ok")
             elif name == "type":
-                phone.type_text(a["text"])
-                print("ok")
+                if phone.recording() and __import__("re").fullmatch(r"\{\w+\}", a["text"]):
+                    print(f"(recorded parameter {a['text']}; nothing typed now)")
+                else:
+                    phone.type_text(a["text"])
+                    print("ok")
             elif name == "swipe":
                 phone.swipe(a["direction"], a.get("element"))
                 print("ok")
@@ -114,6 +141,14 @@ def call(name, a):
                 phone.notifications(int(a.get("limit", 15)), bool(a.get("include_ongoing")))
             elif name == "status":
                 phone.status()
+            elif name == "record_start":
+                phone.record_start(a["name"])
+            elif name == "record_stop":
+                phone.record_stop()
+            elif name == "play_recipe":
+                phone.play(a["name"], {k: str(v) for k, v in (a.get("params") or {}).items()})
+            elif name == "list_recipes":
+                phone.list_recipes()
             elif name == "list_apps":
                 print("\n".join(phone.apps(a.get("filter", ""))))
             elif name == "wait":
@@ -129,6 +164,7 @@ def call(name, a):
         return [{"type": "text", "text": buf.getvalue().strip()}], True
     except Exception as e:  # report, don't crash the server
         return [{"type": "text", "text": f"{buf.getvalue()}error: {e}"}], True
+    phone.record_save(step)
     if image:
         return [{"type": "image", "data": image, "mimeType": "image/png"}], False
     text = buf.getvalue().strip()
@@ -156,7 +192,7 @@ def main():
         if method == "initialize":
             reply(id_, {"protocolVersion": req.get("params", {}).get("protocolVersion", PROTOCOL),
                         "capabilities": {"tools": {}},
-                        "serverInfo": {"name": "android-agent", "version": "0.2.0"}})
+                        "serverInfo": {"name": "android-agent", "version": "0.3.0"}})
         elif method == "tools/list":
             reply(id_, {"tools": TOOLS})
         elif method == "tools/call":

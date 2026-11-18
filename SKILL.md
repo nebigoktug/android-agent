@@ -34,6 +34,12 @@ Tools come from the `phone` MCP server (or `python phone.py <command>` in a shel
 - If the screen header says `landscape` and the layout looks wrong, use `rotation_lock` (and restore it at the end).
 - `swipe up` reveals content further down; then `screen` for the new items.
 
+## Recipes (zero tokens for repeated tasks)
+
+- Before solving a task from scratch, check `list_recipes`; if one fits, `play_recipe` it.
+- After you solve a task the user is likely to repeat, record it: `record_start NAME`, redo the
+  steps (use `type "{param}"` for the changing part), then `record_stop`. Tell the user its name.
+
 ## Safety rules
 
 - If a tool says `STOPPED: ... is in front`, the user switched apps. Read the screen again
