@@ -1,92 +1,129 @@
 # phone-agent
 
-Let an AI agent use your Android phone and its apps — cheaply, and without a PC.
+**Let an AI agent use your Android phone and its apps — about 10× cheaper than screenshot-based tools.**
 
-Most phone agents look at the screen through screenshots (~1,500 tokens per look).
-phone-agent reads the screen as a short numbered text list from Android's accessibility
-tree instead, and only sends what changed:
+Works from your computer (Windows, macOS, Linux) or directly on the phone (Termux, no PC needed).
+Plugs into Claude Code, Cursor, Claude Desktop and any other MCP client.
+
+## How it works
+
+Most phone agents look at the screen as images (~1,500 tokens per look).
+phone-agent reads it as a short numbered list from Android's accessibility tree, and after the
+first look sends only what changed:
 
 ```
-com.android.settings | 15 items
+com.android.settings | portrait | 15 items
 [0] button "Search settings"
-[5] button "Wi-Fi · HomeNetwork_5G"
+[5] button "Wi-Fi · HomeNetwork"
 [6] button "Bluetooth · On"
 [9] button "Hotspot · Off"
-...
 ```
 
-That screen costs ~150 tokens. The agent then says `tap 5`.
-A small grayscale screenshot is used only when the text is not enough (games, Flutter apps, maps).
+That screen is ~150 tokens. The agent replies `tap 5`. Screenshots are used only when text is
+not enough (games, Flutter apps, maps).
 
-> Status: early (v0.1). Works on a Xiaomi with Android 16 over wireless debugging.
-> Token benchmark against other tools: coming soon.
+In a first test (6 everyday tasks: Settings, YouTube search, Calculator, Clock, Play Store, Maps)
+19 screen reads cost **~2,700 tokens**, versus **~28,500** as screenshots. See [BENCHMARK.md](BENCHMARK.md).
 
-## Why another one?
+## Requirements
 
-| | phone-agent | typical phone agents |
-|---|---|---|
-| Runs on the phone itself (Termux), no PC | yes | no (adb from a computer) |
-| Default way of seeing | text list + diff | screenshots |
-| Blind-tap guard (another app came to the front) | yes | — |
-| Dependencies | Python + adb | varies |
+- An Android phone with Developer options (Android 11+ for wireless; any version with a USB cable)
+- Python 3.9+ and `adb` (Android platform-tools) on the computer — or Termux on the phone
+- No other dependencies. Optional: Pillow (smaller fallback screenshots)
 
-## Setup
+## Quick start — from a computer (easiest)
 
-Quick way: `sh setup.sh` (installs adb in Termux if needed, pairs, connects, remembers the device
-in `~/.config/phone-agent/serial`, and can register the MCP server with Claude Code).
-After that, `phone.py` reconnects by itself when the wireless connection drops.
+1. Install adb:
+   - Windows: `winget install Google.PlatformTools`
+   - macOS: `brew install android-platform-tools`
+   - Linux: `sudo apt install adb`
+2. On the phone: *Settings → About phone →* tap *Build number* 7 times, then
+   *Developer options →* turn on **USB debugging**.
+   Xiaomi / Redmi / POCO: also **USB debugging (Security settings)** and **Install via USB**.
+3. Plug the phone in with a data cable and tap **Allow** on the phone.
+4. Run:
+   ```sh
+   git clone https://github.com/OWNER/phone-agent
+   cd phone-agent
+   python setup.py
+   ```
+   Setup finds the phone, remembers it, offers to install ADB Keyboard (for non-English text)
+   and to register the MCP server with Claude Code.
 
-**Manual, on the phone itself (Termux):**
+## Quick start — on the phone itself (Termux, no PC)
 
-1. Developer options → turn on *USB debugging* and *Wireless debugging*
-   (Xiaomi: also *USB debugging (Security settings)*, needed for taps).
-2. Install adb (`pkg install android-tools`, or adb inside proot-distro).
-3. Pair once: Wireless debugging → *Pair device with pairing code*, then
-   `adb pair 127.0.0.1:PAIR_PORT CODE` (use split screen so the code stays visible).
-4. Connect: `adb connect 127.0.0.1:PORT` (the port shown on the Wireless debugging screen).
-5. `export ANDROID_SERIAL=127.0.0.1:PORT`
+1. Install **Termux** from F-Droid (the Play Store version is outdated).
+2. In Termux:
+   ```sh
+   pkg install -y git python android-tools
+   git clone https://github.com/OWNER/phone-agent && cd phone-agent
+   python setup.py
+   ```
+3. Turn on **Wireless debugging** in Developer options. For the one-time pairing, put Termux and
+   Settings in **split screen** (the pairing code disappears if you leave Settings), choose
+   *Pair device with pairing code*, and type the address and code into setup.
 
-**From a computer:** plain `adb` over USB or Wi-Fi works the same way.
+The wireless port changes after a reboot; phone-agent tries to find the phone again on the local
+network by itself, and you only need to pair once.
 
-## Use
+## Using it with an AI agent
+
+**Claude Code:** setup can register it, or:
+```sh
+claude mcp add phone -- python /path/to/phone-agent/mcp_server.py
+```
+Also copy `SKILL.md` into `~/.claude/skills/phone-agent/` — it teaches the agent the cheap way to
+use the tools and when it must ask you first.
+
+**Other MCP clients (Cursor, Claude Desktop, …):** add a stdio server with the command
+`python /path/to/phone-agent/mcp_server.py`.
+
+Tools: `screen`, `tap`, `type`, `swipe`, `key`, `open_app`, `open_link`, `list_apps`, `wait`,
+`screenshot`, `rotation_lock`.
+
+## Using it by hand
 
 ```sh
-python3 phone.py screen            # what is on screen (only changes after the first call)
-python3 phone.py screen --full
-python3 phone.py tap 5
-python3 phone.py type hello , key enter      # chain with a lone comma
-python3 phone.py swipe up
-python3 phone.py open youtube
-python3 phone.py shot              # small screenshot, only when needed
-python3 phone.py link "geo:0,0?q=Eiffel+Tower"   # deep links skip many taps
-python3 phone.py lock , unlock     # pin portrait for a session, then restore the user's setting
+python phone.py screen                 # what is on screen (then only changes)
+python phone.py tap 5
+python phone.py type "hello" , key enter          # chain commands with a lone comma
+python phone.py open youtube --fresh   # open an app at its home screen
+python phone.py link "geo:0,0?q=Eiffel+Tower"     # deep links skip many taps
+python phone.py swipe up
+python phone.py shot                   # small screenshot, only when needed
+python phone.py help
 ```
 
-### As an MCP server (Claude Code, Cursor, ...)
+## Safety and privacy
 
-```sh
-claude mcp add phone -- python3 /path/to/mcp_server.py   # uses the device saved by setup.sh
-```
+- **Blind-tap guard:** before every tap the screen is re-read; if you switched apps, opened the
+  notification shade, or the button moved or disappeared, phone-agent stops instead of tapping
+  the wrong thing.
+- **Ask first:** `SKILL.md` tells the agent to ask you before sending messages, paying, deleting,
+  installing, or changing account settings.
+- **Your keyboard stays yours:** ADB Keyboard is enabled only while typing non-English text, then
+  your keyboard is restored and ADB Keyboard is disabled again.
+- **Where data goes:** screen text goes only to the AI agent you connect (and its provider).
+  phone-agent itself sends nothing anywhere. Secure screens (banking apps) appear empty — by design.
 
-Tools: `screen`, `tap`, `type`, `swipe`, `key`, `open_app`, `open_link`, `list_apps`, `wait`, `screenshot`, `rotation_lock`.
+## Troubleshooting
 
-## Safety
+| Problem | Fix |
+|---|---|
+| `unauthorized` in `adb devices` | Unlock the phone and tap **Allow** on "Allow USB debugging?" |
+| Taps do nothing / `INJECT_EVENTS` error | Xiaomi: turn on **USB debugging (Security settings)** |
+| `INSTALL_FAILED_USER_RESTRICTED` | Xiaomi: turn on **Install via USB**, retry and accept on the phone |
+| "could not read the screen" | The screen is locked or animating — unlock it; reads are retried automatically |
+| Wireless connection lost | Keep Wireless debugging on; if it does not reconnect, run `python setup.py` again |
+| An app looks wrong in landscape | `python phone.py lock` (pins portrait), `unlock` restores your setting |
+| No phone over USB | Use a data cable (not charge-only); try another port |
 
-- `tap`/`type` refuse to act if a different app is in front than the one last read
-  (the user may have switched apps). Read the screen again, then act.
-- Agents should ask the user before anything irreversible: sending messages, payments,
-  deleting, changing account settings. See `SKILL.md`.
-- Apps that block screenshots (banking etc.) show as black/empty — that is intended.
+## Status
 
-## Known limits
-
-- Non-ASCII text (ç, ğ, é, 中文, emoji) needs [ADB Keyboard](https://github.com/senzhk/ADBKeyBoard) installed.
-  phone-agent switches to it only while typing such text and then restores your own keyboard
-  (and disables ADB Keyboard again). Without it, text is typed as an ASCII approximation.
-  Xiaomi: enable "Install via USB" to install it with `adb install`.
-- `uiautomator dump` takes ~1–3 s and can fail while the screen animates (retried automatically).
-- Some apps expose unlabeled buttons; they show as `? icon bottom-left` etc.
+Early (v0.2). Tested on a Xiaomi with Android 16 (Termux, wireless). Device-free tests run on
+Windows, macOS and Linux in CI. Reports from other phones are very welcome — please open an issue
+with your phone model and Android version.
 
 ## License
 
-MIT
+MIT. ADB Keyboard (optional, installed by setup) is GPL-2.0, by senzhk.
