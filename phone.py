@@ -225,7 +225,11 @@ def target(arg):
 def foreground():
     out = sh("dumpsys window | grep -m1 mCurrentFocus")
     m = re.search(r"\{[^}]*\s(\S+)/", out)
-    return m.group(1) if m else ""
+    if m:
+        return m.group(1)
+    # System windows have no package/activity, e.g. "NotificationShade", "StatusBar".
+    m = re.search(r"\{\S+ u\d+ ([^}\s]+)\}", out)
+    return f"system:{m.group(1)}" if m else ""
 
 
 def guard():
