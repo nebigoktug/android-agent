@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""phone-agent setup: connect to an Android phone and remember it.
+"""android-agent setup: connect to an Android phone and remember it.
 
 Works on Windows, macOS, Linux and Termux (on the phone itself).
     python3 setup.py               # interactive
@@ -21,7 +21,7 @@ for _s in (sys.stdout, sys.stderr):
         pass
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-CONF = os.path.join(os.path.expanduser("~"), ".config", "phone-agent")
+CONF = os.path.join(os.path.expanduser("~"), ".config", "android-agent")
 SERIAL_FILE = os.path.join(CONF, "serial")
 TERMUX = "com.termux" in os.environ.get("PREFIX", "")
 # ADB Keyboard (GPL-2.0, github.com/senzhk/ADBKeyBoard) - pinned release, checked by hash.
@@ -171,7 +171,7 @@ def check_pillow():
 
 
 def main():
-    say("phone-agent setup\n")
+    say("android-agent setup\n")
     ensure_adb()
     serial = choose_device(sys.argv[1] if len(sys.argv) > 1 else None)
     rc, _ = run("adb", "-s", serial, "get-state")

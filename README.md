@@ -1,4 +1,4 @@
-# phone-agent
+# android-agent
 
 **Let an AI agent use your Android phone and its apps — about 10× cheaper than screenshot-based tools.**
 
@@ -8,7 +8,7 @@ Plugs into Claude Code, Cursor, Claude Desktop and any other MCP client.
 ## How it works
 
 Most phone agents look at the screen as images (~1,500 tokens per look).
-phone-agent reads it as a short numbered list from Android's accessibility tree, and after the
+android-agent reads it as a short numbered list from Android's accessibility tree, and after the
 first look sends only what changed:
 
 ```
@@ -43,8 +43,8 @@ In a first test (6 everyday tasks: Settings, YouTube search, Calculator, Clock, 
 3. Plug the phone in with a data cable and tap **Allow** on the phone.
 4. Run:
    ```sh
-   git clone https://github.com/OWNER/phone-agent
-   cd phone-agent
+   git clone https://github.com/nebigoktug/android-agent
+   cd android-agent
    python setup.py
    ```
    Setup finds the phone, remembers it, offers to install ADB Keyboard (for non-English text)
@@ -56,27 +56,27 @@ In a first test (6 everyday tasks: Settings, YouTube search, Calculator, Clock, 
 2. In Termux:
    ```sh
    pkg install -y git python android-tools
-   git clone https://github.com/OWNER/phone-agent && cd phone-agent
+   git clone https://github.com/nebigoktug/android-agent && cd android-agent
    python setup.py
    ```
 3. Turn on **Wireless debugging** in Developer options. For the one-time pairing, put Termux and
    Settings in **split screen** (the pairing code disappears if you leave Settings), choose
    *Pair device with pairing code*, and type the address and code into setup.
 
-The wireless port changes after a reboot; phone-agent tries to find the phone again on the local
+The wireless port changes after a reboot; android-agent tries to find the phone again on the local
 network by itself, and you only need to pair once.
 
 ## Using it with an AI agent
 
 **Claude Code:** setup can register it, or:
 ```sh
-claude mcp add phone -- python /path/to/phone-agent/mcp_server.py
+claude mcp add phone -- python /path/to/android-agent/mcp_server.py
 ```
-Also copy `SKILL.md` into `~/.claude/skills/phone-agent/` — it teaches the agent the cheap way to
+Also copy `SKILL.md` into `~/.claude/skills/android-agent/` — it teaches the agent the cheap way to
 use the tools and when it must ask you first.
 
 **Other MCP clients (Cursor, Claude Desktop, …):** add a stdio server with the command
-`python /path/to/phone-agent/mcp_server.py`.
+`python /path/to/android-agent/mcp_server.py`.
 
 Tools: `screen`, `tap`, `type`, `swipe`, `key`, `open_app`, `open_link`, `list_apps`, `wait`,
 `screenshot`, `rotation_lock`.
@@ -97,14 +97,14 @@ python phone.py help
 ## Safety and privacy
 
 - **Blind-tap guard:** before every tap the screen is re-read; if you switched apps, opened the
-  notification shade, or the button moved or disappeared, phone-agent stops instead of tapping
+  notification shade, or the button moved or disappeared, android-agent stops instead of tapping
   the wrong thing.
 - **Ask first:** `SKILL.md` tells the agent to ask you before sending messages, paying, deleting,
   installing, or changing account settings.
 - **Your keyboard stays yours:** ADB Keyboard is enabled only while typing non-English text, then
   your keyboard is restored and ADB Keyboard is disabled again.
 - **Where data goes:** screen text goes only to the AI agent you connect (and its provider).
-  phone-agent itself sends nothing anywhere. Secure screens (banking apps) appear empty — by design.
+  android-agent itself sends nothing anywhere. Secure screens (banking apps) appear empty — by design.
 
 ## Troubleshooting
 

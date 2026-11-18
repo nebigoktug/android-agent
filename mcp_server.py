@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""phone-agent MCP server (stdio, no dependencies).
+"""android-agent MCP server (stdio, no dependencies).
 
 Exposes phone.py as MCP tools so any MCP client (Claude Code, Cursor, ...) can use the phone.
 Register with Claude Code:
@@ -67,7 +67,7 @@ def call(name, a):
     try:
         with contextlib.redirect_stdout(buf):
             if name == "screen":
-                os.environ["PA_AUTOSHOT"] = "0"
+                os.environ["AA_AUTOSHOT"] = "0"
                 phone.screen(bool(a.get("full")))
             elif name == "tap":
                 phone.tap(str(a["target"]), long=bool(a.get("long")))
@@ -94,7 +94,7 @@ def call(name, a):
                 print("ok")
             elif name == "screenshot":
                 phone.shot()
-                path = os.path.expanduser("~/.cache/phone-agent/screen.png")
+                path = os.path.expanduser("~/.cache/android-agent/screen.png")
                 image = base64.b64encode(open(path, "rb").read()).decode()
             else:
                 return [{"type": "text", "text": f"unknown tool {name}"}], True
@@ -129,7 +129,7 @@ def main():
         if method == "initialize":
             reply(id_, {"protocolVersion": req.get("params", {}).get("protocolVersion", PROTOCOL),
                         "capabilities": {"tools": {}},
-                        "serverInfo": {"name": "phone-agent", "version": "0.2.0"}})
+                        "serverInfo": {"name": "android-agent", "version": "0.2.0"}})
         elif method == "tools/list":
             reply(id_, {"tools": TOOLS})
         elif method == "tools/call":

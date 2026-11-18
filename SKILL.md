@@ -1,6 +1,6 @@
 ---
-name: phone-agent
-description: Use an Android phone and its apps through phone-agent (text-first screen reading). Use when the user asks you to do something on their phone, open/operate an app, change a phone setting, or check something in an app.
+name: android-agent
+description: Use an Android phone and its apps through android-agent (text-first screen reading). Use when the user asks you to do something on their phone, open/operate an app, change a phone setting, or check something in an app.
 ---
 
 # Using the phone

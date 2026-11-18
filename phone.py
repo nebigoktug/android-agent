@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""phone-agent: let an AI agent use an Android phone and its apps, cheaply.
+"""android-agent: let an AI agent use an Android phone and its apps, cheaply.
 
 The screen is read as a short numbered text list (from the accessibility tree)
 instead of screenshots, so each look costs ~100-400 tokens instead of ~1,500.
@@ -18,9 +18,9 @@ Commands:
   link URI                 open a deep link or URL (geo:, https://...) - often skips many taps
   lock | unlock            pin to portrait for a session / restore the user's rotation setting
 Chain commands with a lone comma:  phone.py tap 5 , wait , type hello , key enter
-Device: ANDROID_SERIAL, or the device saved by setup.sh (~/.config/phone-agent/serial).
+Device: ANDROID_SERIAL, or the device saved by setup.sh (~/.config/android-agent/serial).
 Safety: tap/type refuse to act if another app came to the front since the last
-`screen` (exit code 3). Set PA_FORCE=1 to override.
+`screen` (exit code 3). Set AA_FORCE=1 to override.
 """
 import base64
 import hashlib
@@ -40,12 +40,12 @@ for _stream in (sys.stdout, sys.stderr):
     except Exception:
         pass
 
-STATE = os.path.expanduser("~/.cache/phone-agent/last.json")
-REMOTE_XML = "/data/local/tmp/pa_ui.xml"
+STATE = os.path.expanduser("~/.cache/android-agent/last.json")
+REMOTE_XML = "/data/local/tmp/aa_ui.xml"
 KEYS = {"back": 4, "home": 3, "enter": 66, "recents": 187, "del": 67, "tab": 61}
 
 
-SERIAL_FILE = os.path.expanduser("~/.config/phone-agent/serial")
+SERIAL_FILE = os.path.expanduser("~/.config/android-agent/serial")
 _checked = False
 
 
@@ -229,7 +229,7 @@ def screen(full=False):
             return
     print(f"{package} | {ORIENTATION} | {len(items)} items")
     print("\n".join(lines))
-    if len(items) <= 2 and os.environ.get("PA_AUTOSHOT", "1") == "1":
+    if len(items) <= 2 and os.environ.get("AA_AUTOSHOT", "1") == "1":
         # Text tree is (nearly) empty: Flutter, games, some WebViews. Fall back to a small image.
         print("(very few items: Flutter/game/WebView?) small screenshot:")
         shot()
@@ -242,7 +242,7 @@ def target(arg):
         return tuple(map(int, arg.split(",")))
     state = load_state()
     el = state["items"][int(arg)]
-    if os.environ.get("PA_VERIFY", "1") != "1":
+    if os.environ.get("AA_VERIFY", "1") != "1":
         return el["x"], el["y"]
     items, package = elements(dump_xml())
     same = [e for e in items if e["t"] == el["t"] and e["e"] == el["e"]]
@@ -269,7 +269,7 @@ def foreground():
 
 def guard():
     """Refuse to act blind: the app we last looked at must still be in front."""
-    if os.environ.get("PA_FORCE") == "1":
+    if os.environ.get("AA_FORCE") == "1":
         return
     expected = load_state().get("package", "")
     current = foreground()
@@ -326,7 +326,7 @@ def swipe(direction, n=None):
     sh("input swipe %d %d %d %d 300" % v)
 
 
-ROT_FILE = os.path.expanduser("~/.cache/phone-agent/rotation.json")
+ROT_FILE = os.path.expanduser("~/.cache/android-agent/rotation.json")
 
 
 def lock_portrait():
@@ -385,7 +385,7 @@ def open_app(name, fresh=False):
 def shot():
     ensure_device()  # binary output: call adb directly, not through the text helper
     png = subprocess.run(["adb", "exec-out", "screencap", "-p"], capture_output=True, timeout=30).stdout
-    path = os.path.expanduser("~/.cache/phone-agent/screen.png")
+    path = os.path.expanduser("~/.cache/android-agent/screen.png")
     os.makedirs(os.path.dirname(path), exist_ok=True)
     try:
         from PIL import Image
