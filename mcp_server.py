@@ -83,6 +83,9 @@ TOOLS = [
      "inputSchema": {"type": "object", "properties": {"filter": {"type": "string"}}}},
     {"name": "wait", "description": "Wait until the screen settles (seconds, default 1).",
      "inputSchema": {"type": "object", "properties": {"seconds": {"type": "number"}}}},
+    {"name": "ocr", "description": "Read visible text from the screen image (for games/Flutter apps where "
+     "`screen` is empty). Returns numbered lines you can `tap`. Needs Tesseract on the computer.",
+     "inputSchema": {"type": "object", "properties": {}}},
     {"name": "screenshot", "description": "Small grayscale screenshot. Use only when the text list "
      "is not enough (images, maps, games, Flutter apps): it costs far more tokens.",
      "inputSchema": {"type": "object", "properties": {}}},
@@ -154,6 +157,8 @@ def call(name, a):
             elif name == "wait":
                 phone.wait(float(a.get("seconds", 1)))
                 print("ok")
+            elif name == "ocr":
+                phone.ocr()
             elif name == "screenshot":
                 phone.shot()
                 path = os.path.expanduser("~/.cache/android-agent/screen.png")

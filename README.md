@@ -29,7 +29,8 @@ In a first test (6 everyday tasks: Settings, YouTube search, Calculator, Clock, 
 
 - An Android phone with Developer options (Android 11+ for wireless; any version with a USB cable)
 - Python 3.10+ and `adb` (Android platform-tools) on the computer — or Termux on the phone
-- No other dependencies. Optional: Pillow (smaller fallback screenshots)
+- No other dependencies. Optional: Pillow (smaller fallback screenshots) and Tesseract
+  (reads text from apps that expose none, e.g. games; set `AA_OCR_LANG=eng+deu` etc.)
 
 ## Quick start — from a computer (easiest)
 
@@ -97,6 +98,7 @@ python phone.py status                # battery, screen, front app, keyboard, ne
 python phone.py swipe up
 python phone.py record yt , open youtube --fresh , tap Search , type "{q}" , key enter , stop
 python phone.py play yt q=lofi          # replays without the model: zero tokens
+python phone.py ocr                    # games/Flutter: text from the image, still tappable by number
 python phone.py shot                   # small screenshot, only when needed
 python phone.py help
 ```

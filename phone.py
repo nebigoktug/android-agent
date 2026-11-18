@@ -22,6 +22,8 @@ Commands:
   open PACKAGE|name [--fresh]  open an app (--fresh: restart it from its home screen)
   apps [filter]            list launchable apps
   shot                     save a small grayscale screenshot (when text is not enough)
+  ocr                      read text from the screen image (games, Flutter); `tap N` works on it
+                           (needs tesseract; language via AA_OCR_LANG, e.g. eng+tur)
   wait [sec]               wait until the screen settles
   link URI                 open a deep link or URL (geo:, https://...) - often skips many taps
   lock | unlock            pin to portrait for a session / restore the user's rotation setting
@@ -250,8 +252,13 @@ def screen(full=False):
     print("\n".join(lines))
     if len(items) <= 2 and os.environ.get("AA_AUTOSHOT", "1") == "1":
         # Text tree is (nearly) empty: Flutter, games, some WebViews. Fall back to a small image.
-        print("(very few items: Flutter/game/WebView?) small screenshot:")
-        shot()
+        import shutil
+        if shutil.which("tesseract"):
+            print("(very few items: Flutter/game/WebView?) reading the image as text:")
+            ocr()
+        else:
+            print("(very few items: Flutter/game/WebView?) small screenshot:")
+            shot()
 
 
 # ---------- finding things by label ----------
@@ -583,6 +590,52 @@ def status():
           f"network {'wifi' if wifi else 'mobile/none'}")
 
 
+def ocr():
+    """Read text from the screen image (for games, Flutter apps, canvases) with Tesseract.
+    Prints a numbered list like `screen`; `tap N` then taps the text's position."""
+    import shutil
+    import tempfile
+    if not shutil.which("tesseract"):
+        print("tesseract not installed (apt/brew/pkg install tesseract) -> falling back to `shot`")
+        shot()
+        return
+    ensure_device()
+    png = subprocess.run(["adb", "exec-out", "screencap", "-p"], capture_output=True, timeout=30).stdout
+    img = os.path.join(tempfile.mkdtemp(), "s.png")
+    open(img, "wb").write(png)
+    lang = os.environ.get("AA_OCR_LANG", "eng")
+    r = subprocess.run(["tesseract", img, "stdout", "-l", lang, "--psm", "11", "tsv"],
+                       capture_output=True, timeout=120)
+    lines = {}
+    for row in r.stdout.decode("utf-8", "replace").splitlines()[1:]:
+        f = row.split("\t")
+        if len(f) < 12 or f[0] != "5" or not f[11].strip():
+            continue
+        try:
+            conf = float(f[10])
+        except ValueError:
+            continue
+        if conf < 55:
+            continue
+        key = (f[2], f[3], f[4])  # block, paragraph, line
+        x, y, w, h = map(int, f[6:10])
+        ln = lines.setdefault(key, {"words": [], "b": [x, y, x + w, y + h]})
+        ln["words"].append(f[11])
+        b = ln["b"]
+        b[0], b[1], b[2], b[3] = min(b[0], x), min(b[1], y), max(b[2], x + w), max(b[3], y + h)
+    items = []
+    for ln in sorted(lines.values(), key=lambda l: (l["b"][1] // 20, l["b"][0])):
+        b = ln["b"]
+        items.append({"t": "ocr", "e": " ".join(ln["words"])[:60], "x": (b[0] + b[2]) // 2,
+                      "y": (b[1] + b[3]) // 2, "b": tuple(b), "k": ""})
+    package = foreground()
+    os.makedirs(os.path.dirname(STATE), exist_ok=True)
+    json.dump({"package": package, "items": items}, open(STATE, "w"), ensure_ascii=False)
+    print(f"{package} | ocr ({lang}) | {len(items)} text lines")
+    for i, el in enumerate(items):
+        print(line(i, el))
+
+
 def wait(sec=1.0):
     """Wait until the focused window stops changing (at most 3*sec)."""
     last, t0 = None, time.time()
@@ -693,6 +746,7 @@ def run(args):
     elif cmd == "open": open_app(" ".join(x for x in a if x != "--fresh"), fresh="--fresh" in a)
     elif cmd == "apps": print("\n".join(apps(a[0] if a else "")))
     elif cmd == "shot": shot()
+    elif cmd == "ocr": ocr()
     elif cmd == "lock": lock_portrait()
     elif cmd == "unlock": unlock_rotation()
     elif cmd == "link": link(" ".join(a))

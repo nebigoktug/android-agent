@@ -25,6 +25,8 @@ Tools come from the `phone` MCP server (or `python phone.py <command>` in a shel
   no app needs to be opened. Treat notification content as private: use it only for the task.
 - `status` tells you in one line if the screen is off, which app is in front, if the keyboard is up.
 
+- If `screen` returns almost nothing (games, Flutter), use `ocr` before `screenshot`: it returns the
+  visible text with numbers you can `tap`, at a fraction of an image's tokens.
 - Prefer `screen` over `screenshot`. Use `screenshot` only when the list is nearly empty
   (games, Flutter apps, maps, images) or labels are clearly missing (`? icon ...`).
 - Chain obvious steps without reading in between when you are sure (CLI: `tap 3 , wait , type hi`).
@@ -42,6 +44,8 @@ Tools come from the `phone` MCP server (or `python phone.py <command>` in a shel
 
 ## Safety rules
 
+- Unexpected pop-ups (cast to TV, rate this app, tips): close them with `key back` and mention it.
+  Never confirm a cast, purchase, permission or sign-in dialog the task did not ask for.
 - If a tool says `STOPPED: ... is in front`, the user switched apps. Read the screen again
   and make sure you should continue; do not force it.
 - Ask the user before anything irreversible or outward-facing: sending a message or email,
