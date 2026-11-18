@@ -6,7 +6,10 @@ instead of screenshots, so each look costs ~100-400 tokens instead of ~1,500.
 
 Commands:
   screen [--full]          numbered list of what is on screen (default: only what changed)
-  tap N | X,Y              tap element N (from the last `screen`) or a coordinate
+  tap N | X,Y | "label"    tap element N (from the last `screen`), a coordinate, or by label
+                           (label: case/accent-insensitive match on the live screen)
+  find "label" [--down]    scroll until it is on screen (no agent turns per swipe)
+  wait-for "label" [sec]   wait until it appears (default 15 s)
   longpress N | X,Y        long press
   type "text"              type into the focused field
   swipe up|down|left|right [N]   swipe the screen (or scrollable element N)
@@ -183,6 +186,17 @@ def elements(xml):
                 continue
         out.append(el)
 
+    # Switches without their own label take the label of the row they sit in.
+    for el in out:
+        if el["t"] == "toggle" and (not el["e"] or el["e"].startswith("#")):
+            row = next((p for p in out if p is not el and p["t"] in ("button", "toggle") and inside(el, p)
+                        and p["e"] and not p["e"].startswith("#")), None)
+            if row and row["t"] == "toggle":
+                el["drop"] = True  # the whole row is already the switch
+            elif row:
+                el["e"] = row["e"].split(" · ")[0]
+    out = [el for el in out if not el.get("drop")]
+
     # Last resort for unlabeled controls: describe them by shape and position.
     if out:
         W = max(e["b"][2] for e in out) or 1
@@ -235,11 +249,84 @@ def screen(full=False):
         shot()
 
 
+# ---------- finding things by label ----------
+_TR = str.maketrans({"İ": "i", "I": "ı", "ı": "i"})
+
+
+def norm(t):
+    """Case- and accent-insensitive form for matching labels (Turkish dotted/dotless i too)."""
+    import unicodedata
+    t = t.translate(_TR).casefold()
+    t = unicodedata.normalize("NFKD", t)
+    return "".join(c for c in t if not unicodedata.combining(c)).strip()
+
+
+def read_now():
+    """Read the screen and save it as the current numbering. Returns (items, package)."""
+    items, package = elements(dump_xml())
+    os.makedirs(os.path.dirname(STATE), exist_ok=True)
+    json.dump({"package": package, "items": items}, open(STATE, "w"), ensure_ascii=False)
+    return items, package
+
+
+def match(items, query):
+    """Index of the element whose label best matches `query`, or None."""
+    def compact(t):  # "Wi-Fi" == "wifi"
+        return re.sub(r"[\W_]+", "", t)
+
+    q = compact(norm(query))
+    best, best_score = None, 0.0
+    for i, el in enumerate(items):
+        lab = compact(norm(el["e"]))
+        if not lab or el["e"].startswith("?"):
+            continue
+        parts = [compact(norm(p)) for p in el["e"].split(" · ")]
+        if lab == q or q in parts:
+            score = 3.0
+        elif lab.startswith(q):
+            score = 2.0
+        elif q in lab:
+            score = 1.0
+        else:
+            continue
+        if el["t"] in ("button", "toggle", "input"):
+            score += 0.5
+        score -= len(lab) / 1000  # prefer the shorter, more specific label
+        if score > best_score:
+            best, best_score = i, score
+    return best
+
+
+def describe(items, i):
+    """Line for item i, plus the on/off state of a switch in the same row, if any."""
+    el = items[i]
+    extra = ""
+    if el["t"] != "toggle":
+        top, bottom = el["b"][1], el["b"][3]
+        for o in items:
+            if o is not el and o["t"] == "toggle" and top <= o["y"] <= bottom:
+                extra = f"  <- switch {o['k']}"
+                break
+    return line(i, el) + extra
+
+
+def is_label(arg):
+    return not re.fullmatch(r"\d+(,\d+)?", arg)
+
+
 def target(arg):
     """Resolve a tap target. For element numbers, re-read the screen and make sure the same
     element (kind + label) is still there; use its current position, or stop."""
     if re.fullmatch(r"\d+,\d+", arg):
         return tuple(map(int, arg.split(",")))
+    if is_label(arg):  # tap "Save": find it on the screen as it is right now
+        items, package = read_now()
+        i = match(items, arg)
+        if i is None:
+            print(f"STOPPED: nothing matching \"{arg}\" on screen ({package}). Try `find` or `screen`.")
+            sys.exit(5)
+        print(f"{package} | tapped {line(i, items[i])}")
+        return items[i]["x"], items[i]["y"]
     state = load_state()
     el = state["items"][int(arg)]
     if os.environ.get("AA_VERIFY", "1") != "1":
@@ -279,7 +366,8 @@ def guard():
 
 
 def tap(arg, long=False):
-    guard()
+    if not is_label(arg):  # label taps read the live screen themselves
+        guard()
     x, y = target(arg)
     sh(f"input swipe {x} {y} {x} {y} 700" if long else f"input tap {x} {y}")
 
@@ -397,6 +485,39 @@ def shot():
     print(path)
 
 
+def find(query, max_swipes=8, direction="up"):
+    """Scroll until an element matching `query` is on screen; print it. No agent turns needed."""
+    last_sig = None
+    for n in range(max_swipes + 1):
+        items, package = read_now()
+        i = match(items, query)
+        if i is not None:
+            print(f"{package} | found after {n} swipe(s): {describe(items, i)}")
+            return i
+        sig = tuple(el["e"] for el in items)
+        if sig == last_sig:
+            break  # the list did not move: reached the end
+        last_sig = sig
+        swipe(direction)
+        time.sleep(0.6)
+    print(f"not found: \"{query}\" (after {n} swipe(s))")
+    sys.exit(5)
+
+
+def wait_for(query, timeout=15.0):
+    """Wait until something matching `query` appears (loading screens, sent confirmations...)."""
+    t0 = time.time()
+    while time.time() - t0 < timeout:
+        items, package = read_now()
+        i = match(items, query)
+        if i is not None:
+            print(f"{package} | appeared after {time.time() - t0:.1f}s: {describe(items, i)}")
+            return i
+        time.sleep(0.8)
+    print(f"timeout: \"{query}\" did not appear in {timeout:.0f}s")
+    sys.exit(6)
+
+
 def wait(sec=1.0):
     """Wait until the focused window stops changing (at most 3*sec)."""
     last, t0 = None, time.time()
@@ -424,6 +545,9 @@ def run(args):
     elif cmd == "unlock": unlock_rotation()
     elif cmd == "link": link(" ".join(a))
     elif cmd == "wait": wait(float(a[0]) if a else 1.0)
+    elif cmd == "find": find(" ".join(x for x in a if x not in ("--down",)),
+                             direction="down" if "--down" in a else "up")
+    elif cmd == "wait-for": wait_for(a[0], float(a[1]) if len(a) > 1 else 15.0)
     else: print(__doc__)
 
 

@@ -85,5 +85,27 @@ class McpTests(unittest.TestCase):
             self.assertEqual(t["inputSchema"]["type"], "object")
 
 
+class MatchTests(unittest.TestCase):
+    ITEMS = [{"t": "button", "e": "Wi-Fi · HomeNet"}, {"t": "text", "e": "About Wi-Fi settings"},
+             {"t": "toggle", "e": "Bluetooth"}, {"t": "button", "e": "? icon top-left"},
+             {"t": "button", "e": "Geliştirici seçenekleri"}]
+
+    def test_punctuation_and_case(self):
+        self.assertEqual(phone.match(self.ITEMS, "wifi"), 0)
+
+    def test_turkish_i(self):
+        self.assertEqual(phone.match(self.ITEMS, "GELİŞTİRİCİ SEÇENEKLERİ"), 4)
+        self.assertEqual(phone.match(self.ITEMS, "gelistirici"), 4)
+
+    def test_exact_beats_substring(self):
+        self.assertEqual(phone.match(self.ITEMS, "bluetooth"), 2)
+
+    def test_placeholders_not_matched(self):
+        self.assertIsNone(phone.match(self.ITEMS, "icon"))
+
+    def test_no_match(self):
+        self.assertIsNone(phone.match(self.ITEMS, "airplane"))
+
+
 if __name__ == "__main__":
     unittest.main()

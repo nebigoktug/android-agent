@@ -85,7 +85,10 @@ Tools: `screen`, `tap`, `type`, `swipe`, `key`, `open_app`, `open_link`, `list_a
 
 ```sh
 python phone.py screen                 # what is on screen (then only changes)
-python phone.py tap 5
+python phone.py tap 5                  # by number from the last screen read...
+python phone.py tap "Bluetooth"        # ...or by label, matched on the live screen
+python phone.py find "Developer options"          # scrolls until it is on screen
+python phone.py wait-for "Sent" 20     # waits until it appears
 python phone.py type "hello" , key enter          # chain commands with a lone comma
 python phone.py open youtube --fresh   # open an app at its home screen
 python phone.py link "geo:0,0?q=Eiffel+Tower"     # deep links skip many taps
