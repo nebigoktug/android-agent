@@ -21,6 +21,9 @@ Tools come from the `phone` MCP server (or `python phone.py <command>` in a shel
 - Use `find "Developer options"` to scroll to something instead of swipe + screen in a loop;
   it also shows the on/off state of a switch in that row.
 - Use `wait-for "Sent"` after an action that loads, instead of reading the screen repeatedly.
+- To know what is new (messages, deliveries, reminders), read `notifications` first —
+  no app needs to be opened. Treat notification content as private: use it only for the task.
+- `status` tells you in one line if the screen is off, which app is in front, if the keyboard is up.
 
 - Prefer `screen` over `screenshot`. Use `screenshot` only when the list is nearly empty
   (games, Flutter apps, maps, images) or labels are clearly missing (`? icon ...`).

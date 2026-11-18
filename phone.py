@@ -10,6 +10,8 @@ Commands:
                            (label: case/accent-insensitive match on the live screen)
   find "label" [--down]    scroll until it is on screen (no agent turns per swipe)
   wait-for "label" [sec]   wait until it appears (default 15 s)
+  notifications [N] [--all]  current notifications, newest first, without opening apps
+  status                   battery, screen on/off, front app, keyboard, auto-rotate, network
   longpress N | X,Y        long press
   type "text"              type into the focused field
   swipe up|down|left|right [N]   swipe the screen (or scrollable element N)
@@ -518,6 +520,66 @@ def wait_for(query, timeout=15.0):
     sys.exit(6)
 
 
+def _extra(block, name):
+    m = re.search(rf"{re.escape(name)}=(?:String|SpannableString)?\s*\((.*?)\)\s*$", block, re.M)
+    if m:
+        return " ".join(m.group(1).split())
+    return ""
+
+
+def notifications(limit=15, include_ongoing=False):
+    """Current notifications as short text lines, newest first. Read without opening any app."""
+    out = sh("dumpsys notification --noredact", timeout=40)
+    head = out.split("Archive")[0]  # current list only, not the history archive
+    seen, rows = set(), []
+    for block in head.split("NotificationRecord(")[1:]:
+        key = re.search(r"key=(\S+)", block)
+        key = key.group(1) if key else block[:40]
+        if key in seen:
+            continue
+        seen.add(key)
+        pkg = re.search(r"pkg=(\S+)", block)
+        pkg = pkg.group(1) if pkg else "?"
+        flags = re.search(r"flags=0x([0-9a-fA-F]+)", block)
+        flags = int(flags.group(1), 16) if flags else 0
+        if "::SUMMARY::" in block or (flags & 0x200):  # group summary
+            continue
+        if not include_ongoing and flags & 0x2:  # ongoing: music player, downloads, VPN...
+            continue
+        title = _extra(block, "android.title")
+        text = _extra(block, "android.bigText") or _extra(block, "android.text")
+        if not (title or text):
+            continue
+        when = re.search(r"when=(\d{10,})", block)
+        when = int(when.group(1)) // 1000 if when else 0
+        rows.append((when, pkg, title, text))
+    rows.sort(reverse=True)
+    if not rows:
+        print("no notifications")
+    for when, pkg, title, text in rows[:limit]:
+        t = time.strftime("%d.%m %H:%M", time.localtime(when)) if when else "--"
+        app = pkg.split(".")[-1]
+        print(f"{t} {app}: {title[:60]}" + (f" — {text[:120]}" if text else ""))
+
+
+def status():
+    """One line about the phone: battery, screen, front app, keyboard, rotation, network."""
+    bat = sh("dumpsys battery")
+    lvl = re.search(r"level: (\d+)", bat)
+    charging = re.search(r"(AC|USB|Wireless) powered: true", bat)
+    pw = sh("dumpsys power | grep -m1 mWakefulness")
+    awake = "Awake" in pw
+    ime = sh("dumpsys input_method | grep -m1 -E 'mInputShown|mIsInputViewShown'")
+    kb = "true" in ime
+    wifi_st = sh("cmd wifi status 2>/dev/null | head -8").lower()
+    wifi = "connected to" in wifi_st and "not connected" not in wifi_st
+    rot = sh("settings get system accelerometer_rotation").strip()
+    print(f"battery {lvl.group(1) if lvl else '?'}%{' charging' if charging else ''} | "
+          f"screen {'on' if awake else 'off'} | front {foreground() or '?'} | "
+          f"keyboard {'shown' if kb else 'hidden'} | auto-rotate {'on' if rot == '1' else 'off'} | "
+          f"network {'wifi' if wifi else 'mobile/none'}")
+
+
 def wait(sec=1.0):
     """Wait until the focused window stops changing (at most 3*sec)."""
     last, t0 = None, time.time()
@@ -545,6 +607,9 @@ def run(args):
     elif cmd == "unlock": unlock_rotation()
     elif cmd == "link": link(" ".join(a))
     elif cmd == "wait": wait(float(a[0]) if a else 1.0)
+    elif cmd == "notifications": notifications(int(a[0]) if a and a[0].isdigit() else 15,
+                                               include_ongoing="--all" in a)
+    elif cmd == "status": status()
     elif cmd == "find": find(" ".join(x for x in a if x not in ("--down",)),
                              direction="down" if "--down" in a else "up")
     elif cmd == "wait-for": wait_for(a[0], float(a[1]) if len(a) > 1 else 15.0)

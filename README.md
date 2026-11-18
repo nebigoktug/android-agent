@@ -92,6 +92,8 @@ python phone.py wait-for "Sent" 20     # waits until it appears
 python phone.py type "hello" , key enter          # chain commands with a lone comma
 python phone.py open youtube --fresh   # open an app at its home screen
 python phone.py link "geo:0,0?q=Eiffel+Tower"     # deep links skip many taps
+python phone.py notifications         # what is new, without opening any app
+python phone.py status                # battery, screen, front app, keyboard, network
 python phone.py swipe up
 python phone.py shot                   # small screenshot, only when needed
 python phone.py help

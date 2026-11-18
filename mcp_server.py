@@ -51,6 +51,23 @@ TOOLS = [
     {"name": "rotation_lock", "description": "lock=true pins the screen to portrait for the session and "
      "remembers the user's setting; lock=false restores it. Restore before finishing.",
      "inputSchema": {"type": "object", "properties": {"lock": {"type": "boolean"}}, "required": ["lock"]}},
+    {"name": "tap_label", "description": "Tap the element whose label best matches `label` on the live "
+     "screen (case/accent-insensitive). No `screen` call needed first.",
+     "inputSchema": {"type": "object", "properties": {"label": {"type": "string"}, "long": {"type": "boolean"}},
+                     "required": ["label"]}},
+    {"name": "find", "description": "Scroll until an element matching `label` is visible and return it "
+     "(with the state of a switch in its row). Cheaper than swipe+screen loops.",
+     "inputSchema": {"type": "object", "properties": {"label": {"type": "string"},
+                     "direction": {"type": "string", "enum": ["up", "down"]}}, "required": ["label"]}},
+    {"name": "wait_for", "description": "Wait until an element matching `label` appears (default 15 s).",
+     "inputSchema": {"type": "object", "properties": {"label": {"type": "string"}, "seconds": {"type": "number"}},
+                     "required": ["label"]}},
+    {"name": "notifications", "description": "Current notifications (newest first) without opening apps. "
+     "Content is private: use it only for the user's task.",
+     "inputSchema": {"type": "object", "properties": {"limit": {"type": "integer"},
+                     "include_ongoing": {"type": "boolean"}}}},
+    {"name": "status", "description": "One line: battery, screen on/off, front app, keyboard, auto-rotate, network.",
+     "inputSchema": {"type": "object", "properties": {}}},
     {"name": "list_apps", "description": "List launchable app packages, optionally filtered.",
      "inputSchema": {"type": "object", "properties": {"filter": {"type": "string"}}}},
     {"name": "wait", "description": "Wait until the screen settles (seconds, default 1).",
@@ -87,6 +104,16 @@ def call(name, a):
                 phone.link(a["uri"])
             elif name == "rotation_lock":
                 phone.lock_portrait() if a.get("lock") else phone.unlock_rotation()
+            elif name == "tap_label":
+                phone.tap(str(a["label"]), long=bool(a.get("long")))
+            elif name == "find":
+                phone.find(a["label"], direction=a.get("direction", "up"))
+            elif name == "wait_for":
+                phone.wait_for(a["label"], float(a.get("seconds", 15)))
+            elif name == "notifications":
+                phone.notifications(int(a.get("limit", 15)), bool(a.get("include_ongoing")))
+            elif name == "status":
+                phone.status()
             elif name == "list_apps":
                 print("\n".join(phone.apps(a.get("filter", ""))))
             elif name == "wait":
