@@ -178,7 +178,10 @@ def setup_service():
     key = input("Paste the key: ").replace(" ", "").strip()
     cfg = {"key": key, "port": 7912}
     if shutil.which("adb") and not TERMUX:
-        run("adb", "forward", "tcp:7912", "tcp:7912")
+        try:
+            run("adb", "forward", "tcp:7912", "tcp:7912", timeout=10)
+        except Exception:
+            pass
     try:
         req = urllib.request.Request("http://127.0.0.1:7912/ping", headers={"X-Key": key})
         with urllib.request.urlopen(req, timeout=10) as r:
@@ -200,6 +203,9 @@ def setup_service():
 
 def main():
     say("android-agent setup\n")
+    if "--key" in sys.argv:  # only (re)enter the companion app key; no adb needed (e.g. on mobile data)
+        setup_service()
+        return
     if "--service" in sys.argv:
         sys.argv.remove("--service")
         if TERMUX and not shutil.which("adb"):
