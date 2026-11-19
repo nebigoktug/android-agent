@@ -135,7 +135,7 @@ def call(name, a):
             elif name == "rotation_lock":
                 phone.lock_portrait() if a.get("lock") else phone.unlock_rotation()
             elif name == "tap_label":
-                phone.tap(str(a["label"]), long=bool(a.get("long")))
+                phone.tap(phone.LABEL_PREFIX + str(a["label"]), long=bool(a.get("long")))
             elif name == "find":
                 phone.find(a["label"], direction=a.get("direction", "up"))
             elif name == "wait_for":

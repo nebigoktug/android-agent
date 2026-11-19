@@ -5,6 +5,8 @@
 Works from your computer (Windows, macOS, Linux) or directly on the phone (Termux, no PC needed).
 Plugs into Claude Code, Cursor, Claude Desktop and any other MCP client.
 
+![android-agent doing 12×34 on a real phone's calculator: ~294 tokens instead of ~13,500 with screenshots](docs/demo.gif)
+
 ## How it works
 
 Most phone agents look at the screen as images (~1,500 tokens per look).
@@ -104,6 +106,7 @@ It asks you in the terminal before anything irreversible, prints each step, and 
 python phone.py screen                 # what is on screen (then only changes)
 python phone.py tap 5                  # by number from the last screen read...
 python phone.py tap "Bluetooth"        # ...or by label, matched on the live screen
+python phone.py tap -t 7               # by text even when it is a number (keypads)
 python phone.py find "Developer options"          # scrolls until it is on screen
 python phone.py wait-for "Sent" 20     # waits until it appears
 python phone.py type "hello" , key enter          # chain commands with a lone comma

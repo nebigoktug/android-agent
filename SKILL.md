@@ -17,7 +17,8 @@ Tools come from the `phone` MCP server (or `python phone.py <command>` in a shel
 ## Keep it cheap
 
 - Act by label when you know what you want: `tap "Save"` reads the live screen and taps the best
-  match (case/accent-insensitive) — no `screen` call needed first.
+  match (case/accent-insensitive) — no `screen` call needed first. On keypads use `tap -t 7`
+  (CLI) or `tap_label` (MCP): a bare number means element number, not the text "7".
 - Use `find "Developer options"` to scroll to something instead of swipe + screen in a loop;
   it also shows the on/off state of a switch in that row.
 - Use `wait-for "Sent"` after an action that loads, instead of reading the screen repeatedly.

@@ -7,6 +7,7 @@ instead of screenshots, so each look costs ~100-400 tokens instead of ~1,500.
 Commands:
   screen [--full]          numbered list of what is on screen (default: only what changed)
   tap N | X,Y | "label"    tap element N (from the last `screen`), a coordinate, or by label
+  tap -t TEXT              tap by text even when it is a number (`tap -t 7` on a keypad)
                            (label: case/accent-insensitive match on the live screen)
   find "label" [--down]    scroll until it is on screen (no agent turns per swipe)
   wait-for "label" [sec]   wait until it appears (default 15 s)
@@ -377,8 +378,18 @@ def describe(items, i):
     return line(i, el) + extra
 
 
+LABEL_PREFIX = "text:"
+
+
+def label_arg(a):
+    """`tap -t 1` / `tap --text 1` taps the element whose text is "1" (not element number 1)."""
+    if a and a[0] in ("-t", "--text"):
+        return LABEL_PREFIX + " ".join(a[1:])
+    return " ".join(a)
+
+
 def is_label(arg):
-    return not re.fullmatch(r"\d+(,\d+)?", arg)
+    return arg.startswith(LABEL_PREFIX) or not re.fullmatch(r"\d+(,\d+)?", arg)
 
 
 def target(arg):
@@ -387,6 +398,8 @@ def target(arg):
     if re.fullmatch(r"\d+,\d+", arg):
         return tuple(map(int, arg.split(",")))
     if is_label(arg):  # tap "Save": find it on the screen as it is right now
+        if arg.startswith(LABEL_PREFIX):
+            arg = arg[len(LABEL_PREFIX):]
         items, package = read_now()
         i = match(items, arg)
         if i is None:
@@ -809,8 +822,8 @@ def list_recipes():
 def run(args):
     cmd, a = args[0], args[1:]
     if cmd == "screen": screen("--full" in a)
-    elif cmd == "tap": tap(a[0])
-    elif cmd == "longpress": tap(a[0], long=True)
+    elif cmd == "tap": tap(label_arg(a))
+    elif cmd == "longpress": tap(label_arg(a), long=True)
     elif cmd == "type":
         txt = " ".join(a)
         if recording() and re.fullmatch(r"\{\w+\}", txt):
