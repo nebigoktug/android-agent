@@ -1,6 +1,8 @@
 # Changelog
 
 ## 0.4.0 (unreleased)
+- Optional companion app (accessibility service): ~7× faster screen reads, works during video,
+  direct Unicode typing; local-only with a private key, visible action log, pause switch; EN/TR UI
 - `ocr`: read text from apps that expose none (games, Flutter) with Tesseract; tappable by number
 - `agent.py` (experimental): run a whole task from plain language with Claude or any
   OpenAI-compatible endpoint; asks before irreversible steps

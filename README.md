@@ -119,6 +119,20 @@ python phone.py shot                   # small screenshot, only when needed
 python phone.py help
 ```
 
+## Optional: companion app (7× faster, no keyboard switching)
+
+The `companion/` folder is a small Android app with an accessibility service. When it is on,
+screen reads take ~0.4 s instead of ~3 s, it works while videos play, and text in any language is
+typed directly. It is **optional**: everything above works without it.
+
+- It listens only inside the phone (127.0.0.1:7912) and answers only requests with your private key.
+- It shows a list of every action it performed, and a switch to pause the assistant.
+- Accessibility is a sensitive permission — the app explains on its first screen what it can see.
+
+Install the APK (from Releases or the CI artifact), follow the 3–4 steps on its screen, tap
+**Copy key**, then run `python setup.py --service` and paste the key. To go back to plain adb,
+delete `~/.config/android-agent/service.json` or set `AA_NO_SERVICE=1`.
+
 ## Safety and privacy
 
 - **Blind-tap guard:** before every tap the screen is re-read; if you switched apps, opened the

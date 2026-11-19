@@ -126,7 +126,7 @@ def call(name, a):
                 phone.swipe(a["direction"], a.get("element"))
                 print("ok")
             elif name == "key":
-                phone.sh(f"input keyevent {phone.KEYS.get(a['key'], a['key'])}")
+                phone.press_key(a["key"])
                 print("ok")
             elif name == "open_app":
                 phone.open_app(a["name"], fresh=bool(a.get("fresh")))

@@ -170,8 +170,44 @@ def check_pillow():
             subprocess.run([sys.executable, "-m", "pip", "install", "--user", "pillow"])
 
 
+def setup_service():
+    """Connect to the companion app (accessibility service) with the key it shows."""
+    import json
+    import urllib.request
+    say("\nCompanion app: open android-agent on the phone, finish its steps, tap 'Copy key'.")
+    key = input("Paste the key: ").replace(" ", "").strip()
+    cfg = {"key": key, "port": 7912}
+    if shutil.which("adb") and not TERMUX:
+        run("adb", "forward", "tcp:7912", "tcp:7912")
+    try:
+        req = urllib.request.Request("http://127.0.0.1:7912/ping", headers={"X-Key": key})
+        with urllib.request.urlopen(req, timeout=10) as r:
+            ok = json.load(r).get("ok")
+    except Exception as e:
+        say(f"Could not reach the app ({e}). Is the service turned on in Accessibility?")
+        return
+    if ok:
+        os.makedirs(CONF, exist_ok=True)
+        path = os.path.join(CONF, "service.json")
+        with open(path, "w") as f:
+            json.dump(cfg, f)
+        try:
+            os.chmod(path, 0o600)
+        except OSError:
+            pass
+        say(f"Companion app connected. Saved to {path}. Screen reads and taps now go through it.")
+
+
 def main():
     say("android-agent setup\n")
+    if "--service" in sys.argv:
+        sys.argv.remove("--service")
+        if TERMUX and not shutil.which("adb"):
+            setup_service()
+            return
+        want_service = True
+    else:
+        want_service = False
     ensure_adb()
     serial = choose_device(sys.argv[1] if len(sys.argv) > 1 else None)
     rc, _ = run("adb", "-s", serial, "get-state")
@@ -184,7 +220,10 @@ def main():
     _, out = run("adb", "-s", serial, "shell", "input keyevent 0")
     if "INJECT_EVENTS" in out or "SecurityException" in out:
         say("Warning: the phone refuses taps. Xiaomi: turn on 'USB debugging (Security settings)'.")
-    install_adb_keyboard(serial)
+    if want_service:
+        setup_service()
+    else:
+        install_adb_keyboard(serial)
     check_pillow()
     say("\nFirst look at the screen:")
     subprocess.run([sys.executable, os.path.join(HERE, "phone.py"), "screen", "--full"])

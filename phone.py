@@ -100,6 +100,55 @@ def discover_wireless():
     return None
 
 
+# ---------- optional companion app (accessibility service, fast path) ----------
+SERVICE_FILE = os.path.expanduser("~/.config/android-agent/service.json")
+_svc = None  # None = not checked yet, False = not available, dict = config
+
+
+def service():
+    """Companion app config if it answers, else False. Reads/taps then skip adb shell entirely."""
+    global _svc
+    if _svc is not None:
+        return _svc
+    _svc = False
+    if os.environ.get("AA_NO_SERVICE") == "1" or not os.path.exists(SERVICE_FILE):
+        return _svc
+    cfg = json.load(open(SERVICE_FILE))
+    if shutil_which("adb") and os.environ.get("ANDROID_SERIAL"):  # computer: forward the phone's port
+        subprocess.run(["adb", "forward", f"tcp:{cfg.get('port', 7912)}", f"tcp:{cfg.get('port', 7912)}"],
+                       capture_output=True, timeout=10)
+    try:
+        r = svc_call(cfg, "GET", "/ping")
+        if r.get("ok"):
+            _svc = cfg
+    except Exception:
+        pass
+    return _svc
+
+
+def shutil_which(name):
+    import shutil
+    return shutil.which(name)
+
+
+def svc_call(cfg, method, path, body=None, raw=False):
+    import urllib.request
+    url = f"http://127.0.0.1:{cfg.get('port', 7912)}{path}"
+    data = json.dumps(body).encode() if body is not None else None
+    req = urllib.request.Request(url, data=data, method=method,
+                                 headers={"X-Key": cfg["key"], "Content-Type": "application/json"})
+    try:
+        with urllib.request.urlopen(req, timeout=20) as r:
+            out = r.read().decode("utf-8", "replace")
+    except urllib.error.HTTPError as e:
+        msg = e.read().decode("utf-8", "replace")
+        if e.code == 423:
+            print("STOPPED: access is paused in the android-agent app.")
+            sys.exit(7)
+        raise RuntimeError(msg)
+    return out if raw else json.loads(out)
+
+
 def adb(*args, timeout=30):
     ensure_device()
     r = subprocess.run(["adb", *args], capture_output=True, timeout=timeout)
@@ -113,6 +162,12 @@ def sh(cmd, timeout=30):
 
 # ---------- seeing ----------
 def dump_xml(tries=3):
+    cfg = service()
+    if cfg:
+        try:
+            return svc_call(cfg, "GET", "/screen", raw=True)
+        except Exception:
+            pass  # fall back to uiautomator below
     # uiautomator fails ("could not get idle state") while the screen is animating; retry.
     for _ in range(tries):
         res = sh(f"rm -f {REMOTE_XML}; uiautomator dump {REMOTE_XML} 2>&1")
@@ -381,12 +436,29 @@ def tap(arg, long=False):
     if not is_label(arg):  # label taps read the live screen themselves
         guard()
     x, y = target(arg)
+    cfg = service()
+    if cfg:
+        svc_call(cfg, "POST", "/tap", {"x": x, "y": y, "long": long})
+        return
     sh(f"input swipe {x} {y} {x} {y} 700" if long else f"input tap {x} {y}")
+
+
+def press_key(k):
+    cfg = service()
+    if cfg and k in ("back", "home", "recents", "enter"):
+        if svc_call(cfg, "POST", "/key", {"key": k}).get("ok"):
+            return
+    sh(f"input keyevent {KEYS.get(k, k)}")
 
 
 def type_text(text, guarded=False):
     if not guarded:
         guard()
+    cfg = service()
+    if cfg:  # the app sets the text directly: any language, no keyboard switching
+        r = svc_call(cfg, "POST", "/type", {"text": text})
+        if r.get("ok"):
+            return
     if all(ord(c) < 128 for c in text):
         safe = text.replace("\\", "\\\\").replace("'", "'\\''").replace(" ", "%s")
         sh(f"input text '{safe}'")
@@ -423,6 +495,10 @@ def swipe(direction, n=None):
     # "up" moves content up (reveals what is below), like a finger swiping up.
     v = {"up": (cx, cy + dy, cx, cy - dy), "down": (cx, cy - dy, cx, cy + dy),
          "left": (cx + dx, cy, cx - dx, cy), "right": (cx - dx, cy, cx + dx, cy)}[direction]
+    cfg = service()
+    if cfg:
+        svc_call(cfg, "POST", "/swipe", {"x1": v[0], "y1": v[1], "x2": v[2], "y2": v[3], "ms": 300})
+        return
     sh("input swipe %d %d %d %d 300" % v)
 
 
@@ -742,7 +818,7 @@ def run(args):
         else:
             type_text(txt)
     elif cmd == "swipe": swipe(a[0], a[1] if len(a) > 1 else None)
-    elif cmd == "key": sh(f"input keyevent {KEYS.get(a[0], a[0])}")
+    elif cmd == "key": press_key(a[0])
     elif cmd == "open": open_app(" ".join(x for x in a if x != "--fresh"), fresh="--fresh" in a)
     elif cmd == "apps": print("\n".join(apps(a[0] if a else "")))
     elif cmd == "shot": shot()

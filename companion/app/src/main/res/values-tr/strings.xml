@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="service_summary">Yapay zekâ asistanınızın ekranı okuyup sizin yerinize dokunmasını sağlar.</string>
+    <string name="service_description">android-agent, kendi bağladığınız bir yapay zekâ asistanının ekranda olanları okumasını ve sizin yerinize dokunup kaydırıp yazmasını sağlar. Yalnızca bu telefonun içinden (127.0.0.1) ve yalnızca size özel anahtarı taşıyan isteklere cevap verir. Bu uygulama internete hiçbir şey göndermez. İstediğiniz an duraklatabilir ya da kapatabilirsiniz.</string>
+
+    <string name="tagline">Yapay zekâ asistanınız bu telefonu kullanabilsin</string>
+    <string name="status_active">Etkin</string>
+    <string name="status_paused">Duraklatıldı</string>
+    <string name="status_off">Kapalı</string>
+    <string name="status_active_sub">Asistanınız ekranı okuyup işlem yapabilir. Her işlem aşağıda listelenir.</string>
+    <string name="status_paused_sub">Servis açık ama asistanın işlem yapmasına izin verilmiyor.</string>
+    <string name="status_off_sub">Açmak için aşağıdaki adımları tamamlayın.</string>
+    <string name="agent_access">Asistan erişimine izin ver</string>
+
+    <string name="setup_title">Kurulum</string>
+    <string name="step1_title">Kısıtlı ayarlara izin verin</string>
+    <string name="step1_text">Android 13 ve sonrası, Play Store dışından kurulan uygulamalarda erişilebilirliği engeller. Uygulama bilgisini açın, sağ üstteki ⋮ menüsünden “Kısıtlı ayarlara izin ver”i seçin.</string>
+    <string name="step1_button">Uygulama bilgisini aç</string>
+    <string name="step2_title">android-agent’ı açın</string>
+    <string name="step2_text">Erişilebilirlik’te “İndirilen uygulamalar”ı (ya da “Yüklü hizmetler”i) açın, android-agent’ı seçip etkinleştirin.</string>
+    <string name="step2_button">Erişilebilirlik’i aç</string>
+    <string name="step3_title">Çalışmaya devam etsin</string>
+    <string name="step3_text">Bazı telefonlar arka plandaki uygulamaları durdurur. android-agent’ın pil kısıtlaması olmadan çalışmasına izin verin. Xiaomi: “Otomatik başlatma”yı da açın.</string>
+    <string name="step3_button">Pil kısıtlamasını kaldır</string>
+    <string name="step4_title">Asistanınızı bağlayın</string>
+    <string name="step4_text">Bilgisayarda ya da Termux’ta şunu çalıştırın:  python setup.py --service  ve istendiğinde bu anahtarı yapıştırın.</string>
+    <string name="copy_key">Anahtarı kopyala</string>
+    <string name="new_key">Yeni anahtar</string>
+    <string name="copied">Anahtar kopyalandı</string>
+    <string name="done">Tamam</string>
+
+    <string name="privacy_title">Neleri görebilir, neler yapabilir?</string>
+    <string name="privacy_1">• Bir asistan istediğinde ekrandaki yazıları ve düğmeleri okur.</string>
+    <string name="privacy_2">• Dokunabilir, kaydırabilir, yazabilir, Geri ya da Ana ekran tuşuna basabilir — yalnızca istendiğinde.</string>
+    <string name="privacy_3">• Şifre alanları gizli kalır. Bankacılık ve diğer güvenli ekranlar boş görünür.</string>
+    <string name="privacy_4">• Yalnızca bu telefonla (127.0.0.1) konuşur ve anahtarınızı ister. İnternet yok, takip yok.</string>
+    <string name="privacy_5">• Açık kaynak: her satırını GitHub’da okuyabilirsiniz.</string>
+
+    <string name="activity_title">Son işlemler</string>
+    <string name="activity_empty">Henüz bir şey yok. İşlemler burada görünecek.</string>
+    <string name="notif_channel">Asistan etkinliği</string>
+    <string name="notif_text">Asistanınız bu telefonu kullanabilir. Duraklatmak için dokunun.</string>
+</resources>

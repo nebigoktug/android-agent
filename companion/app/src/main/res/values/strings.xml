@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">android-agent</string>
+    <string name="service_label">android-agent</string>
+    <string name="service_summary">Lets your AI assistant read the screen and tap for you.</string>
+    <string name="service_description">android-agent lets an AI assistant that you connect yourself read what is on the screen and tap, scroll and type for you. It listens only inside this phone (127.0.0.1) and only answers requests that carry your private key. Nothing is sent to the internet by this app. You can pause it or turn it off at any time.</string>
+
+    <string name="tagline">Let your AI assistant use this phone</string>
+    <string name="status_active">Active</string>
+    <string name="status_paused">Paused</string>
+    <string name="status_off">Off</string>
+    <string name="status_active_sub">Your assistant can read the screen and act. Every action is listed below.</string>
+    <string name="status_paused_sub">The service is on, but the assistant is not allowed to act.</string>
+    <string name="status_off_sub">Finish the steps below to turn it on.</string>
+    <string name="agent_access">Allow assistant access</string>
+
+    <string name="setup_title">Set up</string>
+    <string name="step1_title">Allow restricted settings</string>
+    <string name="step1_text">Android 13+ blocks accessibility for apps installed outside the Play Store. Open app info, tap ⋮ (top right) and choose “Allow restricted settings”.</string>
+    <string name="step1_button">Open app info</string>
+    <string name="step2_title">Turn on android-agent</string>
+    <string name="step2_text">In Accessibility, open “Downloaded apps” (or “Installed services”), choose android-agent and turn it on.</string>
+    <string name="step2_button">Open Accessibility</string>
+    <string name="step3_title">Keep it running</string>
+    <string name="step3_text">Some phones stop background apps. Allow android-agent to run without battery limits. Xiaomi: also turn on “Autostart”.</string>
+    <string name="step3_button">Remove battery limit</string>
+    <string name="step4_title">Connect your assistant</string>
+    <string name="step4_text">On a computer or in Termux run:  python setup.py --service  and paste this key when asked.</string>
+    <string name="copy_key">Copy key</string>
+    <string name="new_key">New key</string>
+    <string name="copied">Key copied</string>
+    <string name="done">Done</string>
+
+    <string name="privacy_title">What can it see and do?</string>
+    <string name="privacy_1">• It reads the text and buttons on the screen while an assistant asks for it.</string>
+    <string name="privacy_2">• It can tap, scroll, type and press Back or Home — only when asked.</string>
+    <string name="privacy_3">• Password fields stay hidden. Banking and other secure screens stay blank.</string>
+    <string name="privacy_4">• It talks only to this phone (127.0.0.1) and needs your key. No internet, no tracking.</string>
+    <string name="privacy_5">• Open source: you can read every line on GitHub.</string>
+
+    <string name="activity_title">Recent actions</string>
+    <string name="activity_empty">Nothing yet. Actions will show up here.</string>
+    <string name="notif_channel">Assistant activity</string>
+    <string name="notif_text">Your assistant can use this phone. Tap to pause.</string>
+</resources>
