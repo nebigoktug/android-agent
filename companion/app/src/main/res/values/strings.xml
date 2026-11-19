@@ -42,4 +42,15 @@
     <string name="activity_empty">Nothing yet. Actions will show up here.</string>
     <string name="notif_channel">Assistant activity</string>
     <string name="notif_text">Your assistant can use this phone. Tap to pause.</string>
+    <string name="log_started">Service started</string>
+    <string name="log_stopped">Service stopped</string>
+    <string name="log_tap">Tap at %1$d,%2$d</string>
+    <string name="log_longpress">Long press at %1$d,%2$d</string>
+    <string name="log_swipe">Swipe</string>
+    <string name="log_read">Read screen (%1$s)</string>
+    <string name="log_typed">Typed %1$d characters</string>
+    <string name="log_key">Pressed %1$s</string>
+    <string name="log_allowed">Access allowed</string>
+    <string name="log_paused">Access paused</string>
+    <string name="log_newkey">New key created</string>
 </resources>

@@ -157,7 +157,7 @@ class MainActivity : Activity() {
             Toast.makeText(this, R.string.copied, Toast.LENGTH_SHORT).show()
         })
         buttons.addView(pillButton(getString(R.string.new_key), filled = false) {
-            Agent.newKey(this); Agent.record("New key created"); refresh()
+            Agent.newKey(this); Agent.record(getString(R.string.log_newkey)); refresh()
         }, LinearLayout.LayoutParams(WRAP_CONTENT, WRAP_CONTENT).apply { leftMargin = dp(10) })
         c.addView(buttons)
         c.addView(label("127.0.0.1 : ${Agent.PORT}", 13f, text2).apply { setPadding(dp(42), dp(10), 0, 0) })

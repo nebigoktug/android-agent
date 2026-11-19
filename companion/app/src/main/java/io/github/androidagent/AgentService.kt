@@ -39,7 +39,7 @@ class AgentService : AccessibilityService() {
 
     override fun onServiceConnected() {
         running = true
-        Agent.record("Service started")
+        Agent.record(getString(R.string.log_started))
         showNotification()
         thread(name = "agent-server", isDaemon = true) { serve() }
     }
@@ -48,7 +48,7 @@ class AgentService : AccessibilityService() {
         running = false
         try { server?.close() } catch (_: Exception) {}
         getSystemService(NotificationManager::class.java).cancel(NOTIF_ID)
-        Agent.record("Service stopped")
+        Agent.record(getString(R.string.log_stopped))
         super.onDestroy()
     }
 
@@ -107,11 +107,11 @@ class AgentService : AccessibilityService() {
                 "GET /screen" -> Triple("200 OK", "text/xml", dumpXml())
                 "POST /tap" -> {
                     val x = a.getInt("x"); val y = a.getInt("y"); val long = a.optBoolean("long")
-                    Agent.record((if (long) "Long press" else "Tap") + " at $x,$y")
+                    Agent.record(getString(if (long) R.string.log_longpress else R.string.log_tap, x, y))
                     json("ok" to gesture(x, y, x, y, if (long) 700 else 60))
                 }
                 "POST /swipe" -> {
-                    Agent.record("Swipe")
+                    Agent.record(getString(R.string.log_swipe))
                     json("ok" to gesture(a.getInt("x1"), a.getInt("y1"), a.getInt("x2"), a.getInt("y2"), a.optInt("ms", 300)))
                 }
                 "POST /type" -> typeText(a.getString("text"))
@@ -133,7 +133,7 @@ class AgentService : AccessibilityService() {
         sb.append("<hierarchy rotation=\"").append(rotation()).append("\">")
         appendNode(sb, root, 0)
         sb.append("</hierarchy>")
-        Agent.record("Read screen (${root.packageName})")
+        Agent.record(getString(R.string.log_read, root.packageName))
         return sb.toString()
     }
 
@@ -195,7 +195,7 @@ class AgentService : AccessibilityService() {
             putCharSequence(AccessibilityNodeInfo.ACTION_ARGUMENT_SET_TEXT_CHARSEQUENCE, current + text)
         }
         val ok = node.performAction(AccessibilityNodeInfo.ACTION_SET_TEXT, args)
-        Agent.record("Typed ${text.length} characters")
+        Agent.record(getString(R.string.log_typed, text.length))
         return json("ok" to ok)
     }
 
@@ -209,12 +209,12 @@ class AgentService : AccessibilityService() {
                 val node = rootInActiveWindow?.findFocus(AccessibilityNodeInfo.FOCUS_INPUT)
                 val ok = Build.VERSION.SDK_INT >= 30 && node != null &&
                     node.performAction(AccessibilityNodeInfo.AccessibilityAction.ACTION_IME_ENTER.id)
-                Agent.record("Pressed Enter")
+                Agent.record(getString(R.string.log_key, "Enter"))
                 return json("ok" to ok)
             }
             else -> return fail("400 Bad Request", "unknown key $key")
         }
-        Agent.record("Pressed ${key.replaceFirstChar { it.uppercase() }}")
+        Agent.record(getString(R.string.log_key, key.replaceFirstChar { it.uppercase() }))
         return json("ok" to performGlobalAction(action))
     }
 

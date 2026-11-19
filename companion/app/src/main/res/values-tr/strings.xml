@@ -40,4 +40,15 @@
     <string name="activity_empty">Henüz bir şey yok. İşlemler burada görünecek.</string>
     <string name="notif_channel">Asistan etkinliği</string>
     <string name="notif_text">Asistanınız bu telefonu kullanabilir. Duraklatmak için dokunun.</string>
+    <string name="log_started">Servis başladı</string>
+    <string name="log_stopped">Servis durdu</string>
+    <string name="log_tap">Dokunuldu: %1$d,%2$d</string>
+    <string name="log_longpress">Uzun basıldı: %1$d,%2$d</string>
+    <string name="log_swipe">Kaydırıldı</string>
+    <string name="log_read">Ekran okundu (%1$s)</string>
+    <string name="log_typed">%1$d karakter yazıldı</string>
+    <string name="log_key">Tuşa basıldı: %1$s</string>
+    <string name="log_allowed">Erişime izin verildi</string>
+    <string name="log_paused">Erişim duraklatıldı</string>
+    <string name="log_newkey">Yeni anahtar oluşturuldu</string>
 </resources>

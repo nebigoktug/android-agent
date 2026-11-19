@@ -31,7 +31,7 @@ object Agent {
 
     fun setAllowed(ctx: Context, on: Boolean) {
         ctx.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit().putBoolean("allowed", on).apply()
-        record(if (on) "Access allowed" else "Access paused")
+        record(ctx.getString(if (on) R.string.log_allowed else R.string.log_paused))
     }
 
     @Synchronized
