@@ -15,6 +15,7 @@ import argparse
 import json
 import os
 import sys
+import urllib.error
 import urllib.request
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
@@ -27,6 +28,14 @@ for _s in (sys.stdout, sys.stderr):
         pass
 
 HERE = os.path.dirname(os.path.abspath(__file__))
+
+# Tool definitions are re-sent every turn; a lean default set keeps each turn small.
+CORE = {"screen", "tap", "tap_label", "type", "swipe", "key", "open_app", "open_link", "find",
+        "wait", "wait_for", "notifications", "status", "list_recipes", "play_recipe", "ocr", "screenshot"}
+
+
+def tool_defs(all_tools):
+    return [t for t in mcp_server.TOOLS + [ASK_USER] if all_tools or t["name"] in CORE | {"ask_user"}]
 
 SYSTEM = """You operate the user's Android phone through tools. Work in small steps:
 read with `screen` (cheap text), act on one element, check the result. Prefer `tap_label`, `find`,
@@ -41,6 +50,9 @@ ASK_USER = {"name": "ask_user", "description": "Ask the user a question in the t
             "Required before irreversible or outward-facing actions.",
             "inputSchema": {"type": "object", "properties": {"question": {"type": "string"}},
                             "required": ["question"]}}
+
+
+ALL_TOOLS = False
 
 
 def skill_text():
@@ -80,7 +92,7 @@ def run_anthropic(task, model, max_steps, effort):
         sys.exit("Install the SDK first: pip install anthropic")
     client = anthropic.Anthropic()
     tools = [{"name": t["name"], "description": t["description"], "input_schema": t["inputSchema"]}
-             for t in mcp_server.TOOLS + [ASK_USER]]
+             for t in tool_defs(ALL_TOOLS)]
     messages = [{"role": "user", "content": task}]
     used_in = used_out = 0
     for _ in range(max_steps):
@@ -122,14 +134,18 @@ def run_anthropic(task, model, max_steps, effort):
 def chat(base_url, key, payload):
     req = urllib.request.Request(base_url.rstrip("/") + "/chat/completions", data=json.dumps(payload).encode(),
                                  headers={"Content-Type": "application/json", "Authorization": f"Bearer {key}"})
-    with urllib.request.urlopen(req, timeout=180) as r:
-        return json.load(r)
+    try:
+        with urllib.request.urlopen(req, timeout=180) as r:
+            return json.load(r)
+    except urllib.error.HTTPError as e:
+        detail = e.read().decode("utf-8", "replace")[:400]
+        sys.exit(f"API error {e.code} from {base_url}: {detail}")
 
 
 def run_openai(task, model, max_steps, base_url, key):
     tools = [{"type": "function", "function": {"name": t["name"], "description": t["description"],
                                                "parameters": t["inputSchema"]}}
-             for t in mcp_server.TOOLS + [ASK_USER] if t["name"] != "screenshot"]
+             for t in tool_defs(ALL_TOOLS) if t["name"] != "screenshot"]
     messages = [{"role": "system", "content": SYSTEM + skill_text()}, {"role": "user", "content": task}]
     used_in = used_out = 0
     for _ in range(max_steps):
@@ -168,7 +184,13 @@ def main():
     p.add_argument("--base-url", default="https://api.openai.com/v1", help="OpenAI-compatible endpoint")
     p.add_argument("--api-key-env", default="OPENAI_API_KEY", help="env var holding the key (openai provider)")
     p.add_argument("--max-steps", type=int, default=40)
+    p.add_argument("--all-tools", action="store_true", help="also send recipe-recording and app-list tools")
+    p.add_argument("--no-skill", action="store_true", help="do not add SKILL.md to the system prompt")
     a = p.parse_args()
+    global ALL_TOOLS
+    ALL_TOOLS = a.all_tools
+    if a.no_skill:
+        globals()["skill_text"] = lambda: ""
     if a.provider == "anthropic":
         run_anthropic(a.task, a.model or "claude-opus-5-5", a.max_steps, a.effort)
     else:

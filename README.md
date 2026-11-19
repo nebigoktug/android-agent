@@ -5,7 +5,7 @@
 Works from your computer (Windows, macOS, Linux) or directly on the phone (Termux, no PC needed).
 Plugs into Claude Code, Cursor, Claude Desktop and any other MCP client.
 
-![android-agent doing 12×34 on a real phone's calculator: ~294 tokens instead of ~13,500 with screenshots](docs/demo.gif)
+![One sentence in: a model opens YouTube, reads the screen as text and plays a video, in 6 steps](docs/demo.gif)
 
 ## How it works
 
@@ -21,7 +21,9 @@ com.android.settings | portrait | 15 items
 [9] button "Hotspot · Off"
 ```
 
-That screen is ~150 tokens. The agent replies `tap 5`. Screenshots are used only when text is
+That screen is ~150 tokens. The agent replies `tap 5`.
+
+![12×34 on a real phone's calculator by label: ~294 tokens instead of ~13,500 with screenshots](docs/demo-calculator.gif) Screenshots are used only when text is
 not enough (games, Flutter apps, maps).
 
 In a first test (6 everyday tasks: Settings, YouTube search, Calculator, Clock, Play Store, Maps)
