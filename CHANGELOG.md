@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.5.0 (2026-11-19)
+- Companion app: status light (green working / yellow idle / red needs you / grey paused),
+  accessibility button = emergency pause, "needs you" card with the assistant's question
+- `signal attention|idle` (CLI + MCP); agent.py turns the light red while it waits for your answer
+- Taps fall back to adb when Android blocks accessibility gestures (permission dialogs)
+- OCR items can be tapped by number
+
 ## 0.4.0 (2026-11-19)
 - Optional companion app (accessibility service): ~7× faster screen reads, works during video,
   direct Unicode typing; local-only with a private key, visible action log, pause switch; EN/TR UI

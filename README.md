@@ -132,6 +132,9 @@ typed directly. It is **optional**: everything above works without it.
 
 - It listens only inside the phone (127.0.0.1:7912) and answers only requests with your private key.
 - It shows a list of every action it performed, and a switch to pause the assistant.
+- A small **status light** in the corner: green while the assistant acts, yellow when idle, red when
+  it is waiting for your OK (or something failed), grey when paused. The system accessibility
+  button works as an emergency stop (tap to pause / resume).
 - Accessibility is a sensitive permission — the app explains on its first screen what it can see.
 
 Install the APK from [Releases](https://github.com/nebigoktug/android-agent/releases/latest), follow the 3–4 steps on its screen, tap

@@ -13,6 +13,24 @@ object Agent {
     private val log = ArrayDeque<String>()
     var listener: (() -> Unit)? = null
 
+    /** Status light: last time the assistant did something, and whether it needs the user. */
+    @Volatile var lastActivity = 0L
+    @Volatile var attention: String? = null   // non-null = red light (waiting for you / error)
+
+    fun touch() { lastActivity = System.currentTimeMillis() }
+
+    fun markAttention(msg: String?) {
+        attention = msg
+        if (msg != null) record("⚠ $msg")
+        listener?.invoke()
+    }
+
+    fun showLight(ctx: Context) =
+        ctx.getSharedPreferences(PREFS, Context.MODE_PRIVATE).getBoolean("light", true)
+
+    fun setShowLight(ctx: Context, on: Boolean) =
+        ctx.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit().putBoolean("light", on).apply()
+
     fun key(ctx: Context): String {
         val p = ctx.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
         return p.getString("key", null) ?: newKey(ctx)

@@ -49,6 +49,8 @@ Tools come from the `phone` MCP server (or `python phone.py <command>` in a shel
   Never confirm a cast, purchase, permission or sign-in dialog the task did not ask for.
 - If a tool says `STOPPED: ... is in front`, the user switched apps. Read the screen again
   and make sure you should continue; do not force it.
+- When you are about to ask the user to confirm something, call `signal` with state `attention` and a
+  short message first (the phone shows a red light), and `signal idle` after the answer.
 - Ask the user before anything irreversible or outward-facing: sending a message or email,
   posting, buying or paying, deleting, uninstalling, changing account/security settings,
   granting permissions.

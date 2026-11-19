@@ -79,6 +79,10 @@ TOOLS = [
                      "params": {"type": "object"}}, "required": ["name"]}},
     {"name": "list_recipes", "description": "List saved recipes and their parameters.",
      "inputSchema": {"type": "object", "properties": {}}},
+    {"name": "signal", "description": "Status light on the phone (companion app). Call with state='attention' "
+     "and a short message right before you ask the user to confirm something, and state='idle' after.",
+     "inputSchema": {"type": "object", "properties": {"state": {"type": "string", "enum": ["attention", "idle"]},
+                     "message": {"type": "string"}}, "required": ["state"]}},
     {"name": "list_apps", "description": "List launchable app packages, optionally filtered.",
      "inputSchema": {"type": "object", "properties": {"filter": {"type": "string"}}}},
     {"name": "wait", "description": "Wait until the screen settles (seconds, default 1).",
@@ -152,6 +156,8 @@ def call(name, a):
                 phone.play(a["name"], {k: str(v) for k, v in (a.get("params") or {}).items()})
             elif name == "list_recipes":
                 phone.list_recipes()
+            elif name == "signal":
+                phone.signal(a["state"], a.get("message", ""))
             elif name == "list_apps":
                 print("\n".join(phone.apps(a.get("filter", ""))))
             elif name == "wait":
@@ -197,7 +203,7 @@ def main():
         if method == "initialize":
             reply(id_, {"protocolVersion": req.get("params", {}).get("protocolVersion", PROTOCOL),
                         "capabilities": {"tools": {}},
-                        "serverInfo": {"name": "android-agent", "version": "0.3.0"}})
+                        "serverInfo": {"name": "android-agent", "version": "0.5.0"}})
         elif method == "tools/list":
             reply(id_, {"tools": TOOLS})
         elif method == "tools/call":

@@ -51,4 +51,10 @@
     <string name="log_allowed">Erişime izin verildi</string>
     <string name="log_paused">Erişim duraklatıldı</string>
     <string name="log_newkey">Yeni anahtar oluşturuldu</string>
+    <string name="status_attention">Seni bekliyor</string>
+    <string name="status_attention_sub">Asistanına bak. Kapatmak için bu karta dokun.</string>
+    <string name="light_toggle">Durum ışığını göster</string>
+    <string name="light_legend">● yeşil: çalışıyor · ● sarı: boşta · ● kırmızı: seni bekliyor · ● gri: duraklatıldı. Işığa dokununca bu uygulama açılır; sistemin erişilebilirlik düğmesi duraklatır ya da sürdürür.</string>
+    <string name="toast_paused">android-agent duraklatıldı</string>
+    <string name="toast_resumed">android-agent sürdürüldü</string>
 </resources>

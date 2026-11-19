@@ -44,6 +44,8 @@ class MainActivity : Activity() {
     private lateinit var statusTitle: TextView
     private lateinit var statusSub: TextView
     private lateinit var accessSwitch: Switch
+    private lateinit var lightSwitch: Switch
+    private val red = Color.parseColor("#F04438")
     private lateinit var keyView: TextView
     private lateinit var activityBox: LinearLayout
     private val steps = mutableListOf<Pair<TextView, () -> Boolean>>()
@@ -119,6 +121,16 @@ class MainActivity : Activity() {
             setOnCheckedChangeListener { _, on -> if (on != Agent.allowed(context)) { Agent.setAllowed(context, on); refresh() } }
         }
         c.addView(accessSwitch)
+        lightSwitch = Switch(this).apply {
+            text = getString(R.string.light_toggle)
+            setTextColor(text1); textSize = 16f
+            setPadding(0, dp(12), 0, 0)
+            setOnCheckedChangeListener { _, on -> Agent.setShowLight(context, on); AgentService.instance?.refreshLight() }
+        }
+        c.addView(lightSwitch)
+        c.addView(label(getString(R.string.light_legend), 13f, text2).apply { setPadding(0, dp(6), 0, 0) })
+        // Tap the card to dismiss a "needs you" alert once you have seen it.
+        c.setOnClickListener { if (Agent.attention != null) { Agent.markAttention(null); refresh() } }
         root.addView(c, lp(bottom = 22))
     }
 
@@ -185,14 +197,18 @@ class MainActivity : Activity() {
     private fun refresh() {
         val enabled = AgentService.isEnabled(this)
         val allowed = Agent.allowed(this)
+        val attention = Agent.attention
         val (color, title, sub) = when {
+            enabled && attention != null -> Triple(red, R.string.status_attention, R.string.status_attention_sub)
             enabled && allowed -> Triple(green, R.string.status_active, R.string.status_active_sub)
             enabled -> Triple(amber, R.string.status_paused, R.string.status_paused_sub)
             else -> Triple(grey, R.string.status_off, R.string.status_off_sub)
         }
         statusDot.background = circle(color)
         statusTitle.text = getString(title)
-        statusSub.text = getString(sub)
+        statusSub.text = if (enabled && attention != null) "“$attention”\n" + getString(sub) else getString(sub)
+        lightSwitch.isChecked = Agent.showLight(this)
+        lightSwitch.isEnabled = enabled
         accessSwitch.isChecked = allowed
         accessSwitch.isEnabled = enabled
 

@@ -36,16 +36,43 @@ import kotlin.concurrent.thread
 class AgentService : AccessibilityService() {
 
     @Volatile private var server: ServerSocket? = null
+    private var light: StatusLight? = null
 
     override fun onServiceConnected() {
         running = true
+        instance = this
         Agent.record(getString(R.string.log_started))
         showNotification()
         thread(name = "agent-server", isDaemon = true) { serve() }
+        refreshLight()
+        // The system accessibility button works as an emergency stop: tap to pause / resume.
+        accessibilityButtonController.registerAccessibilityButtonCallback(
+            object : android.accessibilityservice.AccessibilityButtonController.AccessibilityButtonCallback() {
+                override fun onClicked(controller: android.accessibilityservice.AccessibilityButtonController) {
+                    val on = !Agent.allowed(this@AgentService)
+                    Agent.setAllowed(this@AgentService, on)
+                    if (on) Agent.markAttention(null)
+                    android.widget.Toast.makeText(this@AgentService,
+                        if (on) R.string.toast_resumed else R.string.toast_paused, android.widget.Toast.LENGTH_SHORT).show()
+                }
+            })
+    }
+
+    fun refreshLight() {
+        android.os.Handler(mainLooper).post {
+            if (Agent.showLight(this)) {
+                if (light == null) light = StatusLight(this)
+                light?.show()
+            } else {
+                light?.hide(); light = null
+            }
+        }
     }
 
     override fun onDestroy() {
         running = false
+        instance = null
+        light?.hide()
         try { server?.close() } catch (_: Exception) {}
         getSystemService(NotificationManager::class.java).cancel(NOTIF_ID)
         Agent.record(getString(R.string.log_stopped))
@@ -99,9 +126,15 @@ class AgentService : AccessibilityService() {
 
     private fun route(method: String, path: String, key: String, body: String): Triple<String, String, String> {
         if (!sameKey(key, Agent.key(this))) return fail("401 Unauthorized", "missing or wrong key")
-        if (path == "/ping") return json("ok" to true, "version" to "0.4.0", "allowed" to Agent.allowed(this))
-        if (!Agent.allowed(this)) return fail("423 Locked", "paused by the user in the android-agent app")
+        if (path == "/ping") return json("ok" to true, "version" to "0.5.0", "allowed" to Agent.allowed(this))
         val a = if (body.isNotBlank()) JSONObject(body) else JSONObject()
+        if ("$method $path" == "POST /state") {  // status light: "attention" (waiting for the user / error) or "idle"
+            val st = a.optString("state", "idle")
+            Agent.markAttention(if (st == "attention" || st == "error") a.optString("message", st).ifBlank { st } else null)
+            return json("ok" to true)
+        }
+        if (!Agent.allowed(this)) return fail("423 Locked", "paused by the user in the android-agent app")
+        Agent.touch()
         return try {
             when ("$method $path") {
                 "GET /screen" -> Triple("200 OK", "text/xml", dumpXml())
@@ -235,6 +268,7 @@ class AgentService : AccessibilityService() {
 
     companion object {
         @Volatile var running = false
+        @Volatile var instance: AgentService? = null
         private const val CHANNEL = "activity"
         private const val NOTIF_ID = 1
 

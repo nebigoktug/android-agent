@@ -20,6 +20,7 @@ import urllib.request
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import mcp_server  # noqa: E402  (tool definitions + execution)
+import phone  # noqa: E402
 
 for _s in (sys.stdout, sys.stderr):
     try:
@@ -65,12 +66,18 @@ def skill_text():
 def run_tool(name, args):
     """Execute a tool; returns (text, image_b64 or None, is_error)."""
     if name == "ask_user":
-        print(f"\n? {args.get('question', '')}")
+        q = args.get("question", "")
+        print(f"\n? {q}")
+        phone.signal("attention", q[:80])  # red light on the phone while it waits for you
         try:
             return input("> ").strip() or "(no answer)", None, False
         except EOFError:
             return "(no answer: not interactive) - do not proceed with the irreversible step", None, False
+        finally:
+            phone.signal("idle")
     content, is_err = mcp_server.call(name, args)
+    if is_err:
+        phone.signal("attention", f"{name} failed")
     text = "\n".join(c["text"] for c in content if c["type"] == "text")
     image = next((c["data"] for c in content if c["type"] == "image"), None)
     return text, image, is_err

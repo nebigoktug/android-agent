@@ -53,4 +53,10 @@
     <string name="log_allowed">Access allowed</string>
     <string name="log_paused">Access paused</string>
     <string name="log_newkey">New key created</string>
+    <string name="status_attention">Needs you</string>
+    <string name="status_attention_sub">Check your assistant. Tap this card to dismiss.</string>
+    <string name="light_toggle">Show status light</string>
+    <string name="light_legend">● green: working · ● yellow: idle · ● red: needs you · ● grey: paused. Tap the light to open this app; the system accessibility button pauses or resumes.</string>
+    <string name="toast_paused">android-agent paused</string>
+    <string name="toast_resumed">android-agent resumed</string>
 </resources>

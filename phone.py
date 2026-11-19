@@ -13,6 +13,7 @@ Commands:
   wait-for "label" [sec]   wait until it appears (default 15 s)
   notifications [N] [--all]  current notifications, newest first, without opening apps
   status                   battery, screen on/off, front app, keyboard, auto-rotate, network
+  signal attention|idle [msg]  companion app status light: red while waiting for the user, back to normal
   record NAME | stop       record the following steps as a recipe (taps saved by label)
   play NAME [key=value]    replay a recipe without the model; {key} in typed text is replaced
   recipes                  list saved recipes
@@ -409,8 +410,8 @@ def target(arg):
         return items[i]["x"], items[i]["y"]
     state = load_state()
     el = state["items"][int(arg)]
-    if os.environ.get("AA_VERIFY", "1") != "1":
-        return el["x"], el["y"]
+    if os.environ.get("AA_VERIFY", "1") != "1" or el["t"] == "ocr":
+        return el["x"], el["y"]  # OCR lines are not in the accessibility tree: tap where they were seen
     items, package = elements(dump_xml())
     same = [e for e in items if e["t"] == el["t"] and e["e"] == el["e"]]
     if not same:
@@ -450,10 +451,21 @@ def tap(arg, long=False):
         guard()
     x, y = target(arg)
     cfg = service()
-    if cfg:
-        svc_call(cfg, "POST", "/tap", {"x": x, "y": y, "long": long})
+    if cfg and svc_call(cfg, "POST", "/tap", {"x": x, "y": y, "long": long}).get("ok"):
         return
+    # Android refuses accessibility gestures on some system dialogs (e.g. permission prompts): use adb.
     sh(f"input swipe {x} {y} {x} {y} 700" if long else f"input tap {x} {y}")
+
+
+def signal(state, message=""):
+    """Status light on the phone (companion app): attention = red (waiting for the user / error), idle."""
+    cfg = service()
+    if cfg:
+        try:
+            svc_call(cfg, "POST", "/state", {"state": state, "message": message})
+        except Exception:
+            pass
+    print(f"status light: {state}" + (f" ({message})" if message else ""))
 
 
 def press_key(k):
@@ -843,6 +855,7 @@ def run(args):
     elif cmd == "notifications": notifications(int(a[0]) if a and a[0].isdigit() else 15,
                                                include_ongoing="--all" in a)
     elif cmd == "status": status()
+    elif cmd == "signal": signal(a[0] if a else "idle", " ".join(a[1:]))
     elif cmd == "record": record_start(a[0])
     elif cmd == "stop": record_stop()
     elif cmd == "play": play(a[0], dict(x.split("=", 1) for x in a[1:] if "=" in x))
