@@ -1,6 +1,6 @@
 # Changelog
 
-## 0.4.0 (unreleased)
+## 0.4.0 (2026-11-19)
 - Optional companion app (accessibility service): ~7× faster screen reads, works during video,
   direct Unicode typing; local-only with a private key, visible action log, pause switch; EN/TR UI
 - `ocr`: read text from apps that expose none (games, Flutter) with Tesseract; tappable by number

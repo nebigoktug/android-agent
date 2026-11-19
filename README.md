@@ -129,7 +129,7 @@ typed directly. It is **optional**: everything above works without it.
 - It shows a list of every action it performed, and a switch to pause the assistant.
 - Accessibility is a sensitive permission — the app explains on its first screen what it can see.
 
-Install the APK (from Releases or the CI artifact), follow the 3–4 steps on its screen, tap
+Install the APK from [Releases](https://github.com/nebigoktug/android-agent/releases/latest), follow the 3–4 steps on its screen, tap
 **Copy key**, then run `python setup.py --service` and paste the key. To go back to plain adb,
 delete `~/.config/android-agent/service.json` or set `AA_NO_SERVICE=1`.
 
@@ -159,7 +159,7 @@ delete `~/.config/android-agent/service.json` or set `AA_NO_SERVICE=1`.
 
 ## Status
 
-Early (v0.3). Tested on a Xiaomi with Android 16 (Termux, wireless). Device-free tests run on
+Early (v0.4). Tested on a Xiaomi with Android 16 (Termux, wireless). Device-free tests run on
 Windows, macOS and Linux in CI. Reports from other phones are very welcome — please open an issue
 with your phone model and Android version.
 
